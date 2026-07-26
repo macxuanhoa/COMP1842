@@ -1,0 +1,87 @@
+<template>
+  <div class="workspace-page workspace-page--narrow">
+    <header class="workspace-header">
+      <div>
+        <div class="workspace-eyebrow">
+          <i class="edit icon"></i>
+          Update vocabulary
+        </div>
+        <h1>Edit Word</h1>
+        <p>Update translations, category, and favourite status.</p>
+      </div>
+      <div class="workspace-header__actions">
+        <router-link to="/words" class="ui basic primary button">
+          <i class="arrow left icon"></i>
+          Back to Library
+        </router-link>
+      </div>
+    </header>
+
+    <div v-if="loading" class="ui active centered inline loader workspace-loader"></div>
+
+    <div v-else-if="!word" class="ui error message workspace-loader">
+      <div class="header">Word unavailable</div>
+      <p>Could not load word details. It may have been deleted.</p>
+    </div>
+
+    <section v-else class="ui segment workspace-panel">
+      <div class="workspace-panel-heading">
+        <div class="workspace-panel-heading__title">
+          <span class="workspace-panel-icon orange" aria-hidden="true">
+            <i class="language icon"></i>
+          </span>
+          <div>
+            <h2>Word information</h2>
+            <p>Review the current values before saving your changes.</p>
+          </div>
+        </div>
+      </div>
+      <word-form :word="word" :api-error="apiError" @createOrUpdate="createOrUpdate"></word-form>
+    </section>
+  </div>
+</template>
+
+<script>
+import WordForm from '../components/WordForm.vue';
+import { getWord, updateWord } from '../helpers/helpers';
+
+export default {
+  name: 'edit',
+  components: {
+    'word-form': WordForm
+  },
+  data() {
+    return {
+      loading: true,
+      word: null,
+      apiError: ''
+    };
+  },
+  async mounted() {
+    try {
+      this.word = await getWord(this.$route.params.id);
+    } catch (e) {
+      console.error(e);
+      this.flash('Failed to load word details.', 'error');
+    } finally {
+      this.loading = false;
+    }
+  },
+  methods: {
+    async createOrUpdate(updatedWord) {
+      this.apiError = '';
+      try {
+        await updateWord(updatedWord);
+        this.flash('Word updated successfully!', 'success');
+        this.$router.push('/words');
+      } catch (err) {
+        if (err.response && err.response.data && err.response.data.message) {
+          this.apiError = err.response.data.message;
+        } else {
+          this.apiError = 'An error occurred while saving the word.';
+        }
+      }
+    }
+  }
+};
+</script>
