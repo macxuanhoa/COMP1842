@@ -63,8 +63,7 @@
         </div>
       </div>
 
-      <div v-if="loading" class="ui active centered inline loader workspace-loader"></div>
-      <div v-else>
+      <div>
         <div class="category-table-wrapper">
           <table class="ui celled compact table category-table">
             <thead>
@@ -165,7 +164,6 @@ export default {
   name: 'categories',
   data() {
     return {
-      loading: true,
       categories: [],
       words: [],
       newCategoryName: '',
@@ -191,7 +189,6 @@ export default {
   methods: {
     isGeneralCategoryName,
     async loadData() {
-      this.loading = true;
       try {
         const categoryList = await getCategories();
         const general = categoryList.find(category => isGeneralCategoryName(category.name));
@@ -210,8 +207,6 @@ export default {
         }
       } catch (e) {
         console.error('Failed to load categories data', e);
-      } finally {
-        this.loading = false;
       }
     },
     getWordCount(catName) {

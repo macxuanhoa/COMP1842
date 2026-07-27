@@ -31,9 +31,7 @@
           </div>
         </div>
 
-        <div v-if="loading" class="ui active centered inline loader workspace-loader"></div>
-
-        <div v-else class="ui form">
+        <div class="ui form">
           <div class="field">
             <label>Question Language</label>
             <select class="ui dropdown fluid" v-model="qLang" @change="onQLangChange">
@@ -132,7 +130,6 @@ export default {
   },
   data() {
     return {
-      loading: true,
       words: [],
       categories: [],
       qLang: 'german',
@@ -181,8 +178,6 @@ export default {
       }
     } catch (e) {
       console.error(e);
-    } finally {
-      this.loading = false;
     }
   },
   methods: {

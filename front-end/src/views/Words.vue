@@ -71,20 +71,17 @@
       <div class="library-panel-heading library-panel-heading--table">
         <div>
           <h2>Vocabulary entries</h2>
-          <p v-if="!loading">
+          <p>
             {{ filteredWords.length }}
             {{ filteredWords.length === 1 ? 'word' : 'words' }} in this view
           </p>
-          <p v-else>Loading your library…</p>
         </div>
         <span class="library-panel-icon library-panel-icon--blue" aria-hidden="true">
           <i class="list ul icon"></i>
         </span>
       </div>
 
-      <div v-if="loading" class="ui active centered inline loader library-loader"></div>
-
-      <div v-else>
+      <div>
         <div v-if="filteredWords.length === 0" class="library-empty-state">
           <div class="library-empty-state__icon">
             <i class="search icon"></i>
@@ -190,7 +187,6 @@ export default {
   name: 'words',
   data() {
     return {
-      loading: true,
       words: [],
       categories: ['General'],
       search: '',
@@ -237,13 +233,10 @@ export default {
   },
   methods: {
     async loadWords() {
-      this.loading = true;
       try {
         this.words = await getWords();
       } catch (e) {
         console.error(e);
-      } finally {
-        this.loading = false;
       }
     },
     async loadCategories() {

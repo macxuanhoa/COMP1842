@@ -17,9 +17,7 @@
       </div>
     </header>
 
-    <div v-if="loading" class="ui active centered inline loader workspace-loader"></div>
-
-    <div v-else-if="!word" class="ui error message word-detail-error">
+    <div v-if="!word" class="ui error message word-detail-error">
       <div class="header">Word unavailable</div>
       <p>Could not find the word details. It might have been deleted.</p>
     </div>
@@ -101,7 +99,6 @@ export default {
   name: 'show',
   data() {
     return {
-      loading: true,
       word: null
     };
   },
@@ -110,8 +107,6 @@ export default {
       this.word = await getWord(this.$route.params.id);
     } catch (e) {
       console.error(e);
-    } finally {
-      this.loading = false;
     }
   },
   methods: {

@@ -17,9 +17,7 @@
       </div>
     </header>
 
-    <div v-if="loading" class="ui active centered inline loader workspace-loader"></div>
-
-    <div v-else>
+    <div>
       <div class="ui three cards">
         <div class="ui card">
           <div class="content">
@@ -91,7 +89,6 @@ export default {
   name: 'dashboard',
   data() {
     return {
-      loading: true,
       totalWords: 0,
       favouriteCount: 0,
       categoryCount: 0,
@@ -120,8 +117,6 @@ export default {
       }
     } catch (e) {
       console.error(e);
-    } finally {
-      this.loading = false;
     }
   },
   methods: {

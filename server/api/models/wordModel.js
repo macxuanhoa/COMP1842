@@ -24,7 +24,9 @@ const WordSchema = new Schema({
     type: String,
     required: true,
     default: 'General',
-    trim: true
+    trim: true,
+    minlength: 2,
+    maxlength: 40
   },
   favourite: {
     type: Boolean,
@@ -35,5 +37,13 @@ const WordSchema = new Schema({
     default: Date.now
   }
 });
+
+WordSchema.index(
+  { german: 1, english: 1, french: 1 },
+  {
+    unique: true,
+    collation: { locale: 'en', strength: 2 }
+  }
+);
 
 module.exports = mongoose.model('Words', WordSchema);

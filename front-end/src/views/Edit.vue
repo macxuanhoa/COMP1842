@@ -17,9 +17,7 @@
       </div>
     </header>
 
-    <div v-if="loading" class="ui active centered inline loader workspace-loader"></div>
-
-    <div v-else-if="!word" class="ui error message workspace-loader">
+    <div v-if="!word" class="ui error message workspace-loader">
       <div class="header">Word unavailable</div>
       <p>Could not load word details. It may have been deleted.</p>
     </div>
@@ -52,7 +50,6 @@ export default {
   },
   data() {
     return {
-      loading: true,
       word: null,
       apiError: ''
     };
@@ -63,8 +60,6 @@ export default {
     } catch (e) {
       console.error(e);
       this.flash('Failed to load word details.', 'error');
-    } finally {
-      this.loading = false;
     }
   },
   methods: {
