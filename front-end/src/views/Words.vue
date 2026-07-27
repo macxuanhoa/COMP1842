@@ -199,8 +199,8 @@ export default {
     filteredWords() {
       let result = [...this.words];
 
-      if (this.search.trim()) {
-        const lowerSearch = this.search.trim().toLowerCase();
+      const lowerSearch = this.search.trim().toLowerCase();
+      if (lowerSearch) {
         result = result.filter(word =>
           word.german.toLowerCase().includes(lowerSearch) ||
           word.english.toLowerCase().includes(lowerSearch) ||
