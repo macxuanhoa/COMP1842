@@ -4,29 +4,6 @@ const { normalizeCategoryName, getCategoryNameError } = require('../utils/catego
 
 // ---------- helpers ----------
 
-function buildWordData(body) {
-  return {
-    german: typeof body.german === 'string' ? body.german.trim() : '',
-    english: typeof body.english === 'string' ? body.english.trim() : '',
-    french: typeof body.french === 'string' ? body.french.trim() : '',
-    category: typeof body.category === 'string' ? body.category.trim() : 'General',
-    favourite: Boolean(body.favourite)
-  };
-}
-
-function getWordValidationError(data) {
-  if (!data.german) return 'German word is required.';
-  if (!data.english) return 'English word is required.';
-  if (!data.french) return 'French word is required.';
-
-  if (data.german.length > 80 || data.english.length > 80 || data.french.length > 80) {
-    return 'Maximum length is 80 characters.';
-  }
-
-  const catName = normalizeCategoryName(data.category);
-  return getCategoryNameError(catName) || '';
-}
-
 async function findOrCreateCategory(categoryName) {
   const normalized = normalizeCategoryName(categoryName);
   const catError = getCategoryNameError(normalized);
@@ -43,6 +20,16 @@ async function findOrCreateCategory(categoryName) {
   return newCat.save();
 }
 
+async function checkDuplicateWord(german, english, french, excludeWordId = null) {
+  const query = {
+    german:   String(german   || '').trim(),
+    english:  String(english  || '').trim(),
+    french:   String(french   || '').trim()
+  };
+  if (excludeWordId) query._id = { $ne: excludeWordId };
+  return Word.findOne(query);
+}
+
 // ---------- exports ----------
 
 exports.list_all_words = async (req, res) => {
@@ -50,50 +37,48 @@ exports.list_all_words = async (req, res) => {
     const words = await Word.find({}).sort({ created_date: -1 });
     res.json(words);
   } catch (err) {
-    res.status(500).send({ message: 'Unexpected error' });
+    res.status(500).json({ message: err.message });
   }
 };
 
 exports.create_a_word = async (req, res) => {
   try {
-    const data = buildWordData(req.body);
+    const duplicate = await checkDuplicateWord(
+      req.body.german,
+      req.body.english,
+      req.body.french
+    );
 
-    const validationErr = getWordValidationError(data);
-    if (validationErr) {
-      return res.status(400).send({ message: validationErr });
-    }
-
-    // duplicate check
-    const duplicate = await Word.findOne({
-      german: data.german,
-      english: data.english,
-      french: data.french
-    });
     if (duplicate) {
-      return res.status(409).send({ message: 'This word already exists.' });
+      return res.status(409).json({
+        message: 'This word already exists.'
+      });
     }
 
-    // resolve category
-    const categoryDoc = await findOrCreateCategory(data.category);
+    const categoryDoc = await findOrCreateCategory(
+      req.body.category || 'General'
+    );
+
     if (!categoryDoc) {
-      return res.status(400).send({ message: 'Invalid category name.' });
+      return res.status(400).json({
+        message: 'Invalid category name.'
+      });
     }
 
     const newWord = new Word({
-      german: data.german,
-      english: data.english,
-      french: data.french,
+      german: req.body.german,
+      english: req.body.english,
+      french: req.body.french,
       category: categoryDoc.name,
-      favourite: data.favourite
+      favourite: Boolean(req.body.favourite)
     });
 
-    const saved = await newWord.save();
-    res.status(201).json(saved);
+    const savedWord = await newWord.save();
+    return res.status(201).json(savedWord);
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: err.message });
-    }
-    res.status(500).send({ message: 'Unexpected error' });
+    return res.status(400).json({
+      message: err.message
+    });
   }
 };
 
@@ -101,11 +86,11 @@ exports.read_a_word = async (req, res) => {
   try {
     const word = await Word.findById(req.params.wordId);
     if (!word) {
-      return res.status(404).send({ message: 'Word not found' });
+      return res.status(404).json({ message: 'Word not found' });
     }
     res.json(word);
   } catch (err) {
-    res.status(500).send({ message: 'Unexpected error' });
+    res.status(400).json({ message: err.message });
   }
 };
 
@@ -113,46 +98,40 @@ exports.update_a_word = async (req, res) => {
   try {
     const word = await Word.findById(req.params.wordId);
     if (!word) {
-      return res.status(404).send({ message: 'Word not found' });
+      return res.status(404).json({ message: 'Word not found' });
     }
 
-    const data = buildWordData(req.body);
+    const duplicate = await checkDuplicateWord(
+      req.body.german,
+      req.body.english,
+      req.body.french,
+      req.params.wordId
+    );
 
-    const validationErr = getWordValidationError(data);
-    if (validationErr) {
-      return res.status(400).send({ message: validationErr });
-    }
-
-    // duplicate check, excluding current word
-    const duplicate = await Word.findOne({
-      german: data.german,
-      english: data.english,
-      french: data.french,
-      _id: { $ne: req.params.wordId }
-    });
     if (duplicate) {
-      return res.status(409).send({ message: 'This word already exists.' });
+      return res.status(409).json({
+        message: 'This word already exists.'
+      });
     }
 
-    // resolve category
-    const categoryDoc = await findOrCreateCategory(data.category);
+    const categoryDoc = await findOrCreateCategory(
+      req.body.category || word.category || 'General'
+    );
+
     if (!categoryDoc) {
-      return res.status(400).send({ message: 'Invalid category name.' });
+      return res.status(400).json({ message: 'Invalid category name.' });
     }
 
-    word.german = data.german;
-    word.english = data.english;
-    word.french = data.french;
+    word.german = req.body.german;
+    word.english = req.body.english;
+    word.french = req.body.french;
     word.category = categoryDoc.name;
-    word.favourite = data.favourite;
+    word.favourite = Boolean(req.body.favourite);
 
-    const updated = await word.save();
-    res.json(updated);
+    const updatedWord = await word.save();
+    res.json(updatedWord);
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: err.message });
-    }
-    res.status(500).send({ message: 'Unexpected error' });
+    res.status(400).json({ message: err.message });
   }
 };
 
@@ -160,10 +139,10 @@ exports.delete_a_word = async (req, res) => {
   try {
     const word = await Word.findByIdAndDelete(req.params.wordId);
     if (!word) {
-      return res.status(404).send({ message: 'Word not found' });
+      return res.status(404).json({ message: 'Word not found' });
     }
-    res.send({ message: 'Word deleted successfully', id: req.params.wordId });
+    res.json({ message: 'Word deleted successfully', id: req.params.wordId });
   } catch (err) {
-    res.status(500).send({ message: 'Unexpected error' });
+    res.status(400).json({ message: err.message });
   }
 };
