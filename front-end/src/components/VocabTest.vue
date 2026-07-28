@@ -127,8 +127,6 @@
 </template>
 
 <script>
-import { getLangName, getLangFlag, getLangCode } from '../utils/language';
-
 export default {
   name: 'vocab-test',
   props: {
@@ -156,7 +154,12 @@ export default {
       testOver: false,
       feedback: null,
       lastCorrectAnswer: '',
-      waitingNext: false
+      waitingNext: false,
+      langInfo: {
+        german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
+        english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
+        french:  { name: 'French',  code: 'FR', flag: 'france flag' }
+      }
     };
   },
   computed: {
@@ -175,12 +178,12 @@ export default {
     feedbackIcon() {
       return this.feedback === 'correct' ? 'check circle icon' : 'times circle icon';
     },
-    qLangName() { return getLangName(this.qLang); },
-    aLangName() { return getLangName(this.aLang); },
-    qLangCode() { return getLangCode(this.qLang); },
-    aLangCode() { return getLangCode(this.aLang); },
-    qLangFlag() { return getLangFlag(this.qLang); },
-    aLangFlag() { return getLangFlag(this.aLang); }
+    qLangName() { return this.langInfo[this.qLang].name; },
+    aLangName() { return this.langInfo[this.aLang].name; },
+    qLangCode() { return this.langInfo[this.qLang].code; },
+    aLangCode() { return this.langInfo[this.aLang].code; },
+    qLangFlag() { return this.langInfo[this.qLang].flag; },
+    aLangFlag() { return this.langInfo[this.aLang].flag; }
   },
   mounted() {
     this.$nextTick(() => {

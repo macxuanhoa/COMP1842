@@ -373,9 +373,6 @@ export default {
 .library-filter-grid .field {
   margin: 0 !important;
 }
-.library-loader {
-  margin: 3rem auto !important;
-}
 .library-table-wrapper {
   width: 100%;
   overflow-x: auto;
