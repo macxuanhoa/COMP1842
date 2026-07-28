@@ -4,29 +4,26 @@ const Schema = mongoose.Schema;
 const WordSchema = new Schema({
   german: {
     type: String,
-    required: 'Please enter the German word',
+    required: true,
     trim: true,
     maxlength: 80
   },
   english: {
     type: String,
-    required: 'Please enter the English word',
+    required: true,
     trim: true,
     maxlength: 80
   },
   french: {
     type: String,
-    required: 'Please enter the French word',
+    required: true,
     trim: true,
     maxlength: 80
   },
   category: {
     type: String,
-    required: true,
     default: 'General',
-    trim: true,
-    minlength: 2,
-    maxlength: 40
+    trim: true
   },
   favourite: {
     type: Boolean,

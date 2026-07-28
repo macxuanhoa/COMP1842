@@ -1,9 +1,8 @@
 const Category = require('../models/categoryModel');
 const Word = require('../models/wordModel');
-const { normalizeCategoryName, getCategoryNameError } = require('../utils/categoryValidation');
 
-function isGeneralName(name) {
-  return normalizeCategoryName(name).toLowerCase() === 'general';
+function isGeneral(name) {
+  return (name || '').trim().toLowerCase() === 'general';
 }
 
 exports.list_all_categories = async (req, res) => {
@@ -11,30 +10,24 @@ exports.list_all_categories = async (req, res) => {
     const categories = await Category.find({}).sort({ name: 1 });
     res.json(categories);
   } catch (err) {
-    res.status(500).send({ message: 'Unexpected error' });
+    res.status(500).json({ message: 'Failed to load categories.' });
   }
 };
 
 exports.create_a_category = async (req, res) => {
   try {
-    const name = normalizeCategoryName(req.body.name || '');
-    const error = getCategoryNameError(name);
-
-    if (error) {
-      return res.status(400).send({ message: error });
+    const name = (req.body.name || '').trim();
+    if (!name) {
+      return res.status(400).json({ message: 'Category name is required.' });
     }
 
-    if (isGeneralName(name)) {
-      return res.status(400).send({ message: 'General is a protected category.' });
+    if (isGeneral(name)) {
+      return res.status(400).json({ message: 'General is a protected category.' });
     }
 
-    // case-insensitive duplicate check
-    const categories = await Category.find({});
-    const duplicate = categories.find(
-      c => normalizeCategoryName(c.name).toLowerCase() === name.toLowerCase()
-    );
-    if (duplicate) {
-      return res.status(409).send({ message: 'Category already exists.' });
+    const existing = await Category.findOne({ name });
+    if (existing) {
+      return res.status(409).json({ message: 'Category already exists.' });
     }
 
     const newCategory = new Category({ name });
@@ -42,12 +35,16 @@ exports.create_a_category = async (req, res) => {
     res.status(201).json(saved);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: err.message });
+      return res.status(400).json({
+        message:
+          err.errors?.name?.message ||
+          'Category name must be 2-40 characters.'
+      });
     }
-    if (err.code === 11000) {
-      return res.status(409).send({ message: 'Category already exists.' });
-    }
-    res.status(500).send({ message: 'Unexpected error' });
+    console.error(err);
+    return res.status(500).json({
+      message: 'Failed to create category.'
+    });
   }
 };
 
@@ -55,35 +52,27 @@ exports.update_a_category = async (req, res) => {
   try {
     const category = await Category.findById(req.params.categoryId);
     if (!category) {
-      return res.status(404).send({ message: 'Category not found' });
+      return res.status(404).json({ message: 'Category not found.' });
     }
 
-    if (isGeneralName(category.name)) {
-      return res.status(400).send({ message: 'Cannot edit General category.' });
+    if (isGeneral(category.name)) {
+      return res.status(400).json({ message: 'Cannot edit General category.' });
     }
 
-    const newName = normalizeCategoryName(req.body.name || '');
-    const error = getCategoryNameError(newName);
-
-    if (error) {
-      return res.status(400).send({ message: error });
+    const newName = (req.body.name || '').trim();
+    if (!newName) {
+      return res.status(400).json({ message: 'Category name is required.' });
     }
 
-    if (isGeneralName(newName)) {
-      return res.status(400).send({ message: 'General is a protected category.' });
+    if (isGeneral(newName)) {
+      return res.status(400).json({ message: 'General is a protected category.' });
     }
 
-    // case-insensitive duplicate check, excluding self
-    const categories = await Category.find({});
-    const duplicate = categories.find(
-      c => c._id.toString() !== req.params.categoryId &&
-        normalizeCategoryName(c.name).toLowerCase() === newName.toLowerCase()
-    );
-    if (duplicate) {
-      return res.status(409).send({ message: 'Category already exists.' });
+    const duplicate = await Category.findOne({ name: newName });
+    if (duplicate && duplicate._id.toString() !== req.params.categoryId) {
+      return res.status(409).json({ message: 'Category already exists.' });
     }
 
-    // update all words using old category name
     await Word.updateMany({ category: category.name }, { category: newName });
 
     category.name = newName;
@@ -91,12 +80,16 @@ exports.update_a_category = async (req, res) => {
     res.json(updated);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: err.message });
+      return res.status(400).json({
+        message:
+          err.errors?.name?.message ||
+          'Category name must be 2-40 characters.'
+      });
     }
-    if (err.code === 11000) {
-      return res.status(409).send({ message: 'Category already exists.' });
-    }
-    res.status(500).send({ message: 'Unexpected error' });
+    console.error(err);
+    return res.status(500).json({
+      message: 'Failed to update category.'
+    });
   }
 };
 
@@ -104,23 +97,23 @@ exports.delete_a_category = async (req, res) => {
   try {
     const category = await Category.findById(req.params.categoryId);
     if (!category) {
-      return res.status(404).send({ message: 'Category not found' });
+      return res.status(404).json({ message: 'Category not found.' });
     }
 
-    if (isGeneralName(category.name)) {
-      return res.status(400).send({ message: 'Cannot delete General category.' });
+    if (isGeneral(category.name)) {
+      return res.status(400).json({ message: 'Cannot delete General category.' });
     }
 
     const wordCount = await Word.countDocuments({ category: category.name });
     if (wordCount > 0) {
-      return res.status(409).send({
+      return res.status(409).json({
         message: `Cannot delete. ${wordCount} word(s) are using this category.`
       });
     }
 
     await Category.findByIdAndDelete(req.params.categoryId);
-    res.send({ message: 'Category deleted successfully', id: req.params.categoryId });
+    res.json({ message: 'Category deleted successfully.' });
   } catch (err) {
-    res.status(500).send({ message: 'Unexpected error' });
+    res.status(400).json({ message: err.message });
   }
 };

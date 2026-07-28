@@ -34,7 +34,7 @@
           </div>
         </div>
       </div>
-      <word-form :word="word" :api-error="apiError" @createOrUpdate="createOrUpdate"></word-form>
+      <word-form :word="word" @createOrUpdate="createOrUpdate"></word-form>
     </section>
   </div>
 </template>
@@ -50,31 +50,29 @@ export default {
   },
   data() {
     return {
-      word: null,
-      apiError: ''
+      word: null
     };
   },
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
       this.flash('Failed to load word details.', 'error');
     }
   },
   methods: {
     async createOrUpdate(updatedWord) {
-      this.apiError = '';
       try {
         await updateWord(updatedWord);
         this.flash('Word updated successfully!', 'success');
         this.$router.push('/words');
       } catch (err) {
-        if (err.response && err.response.data && err.response.data.message) {
-          this.apiError = err.response.data.message;
-        } else {
-          this.apiError = 'An error occurred while saving the word.';
-        }
+        const message =
+          err.response && err.response.data && err.response.data.message
+            ? err.response.data.message
+            : 'Failed to update word.';
+        this.flash(message, 'error');
       }
     }
   }

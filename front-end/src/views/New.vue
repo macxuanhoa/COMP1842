@@ -29,7 +29,7 @@
           </div>
         </div>
       </div>
-      <word-form :api-error="apiError" @createOrUpdate="createOrUpdate"></word-form>
+      <word-form @createOrUpdate="createOrUpdate"></word-form>
     </section>
   </div>
 </template>
@@ -43,24 +43,18 @@ export default {
   components: {
     'word-form': WordForm
   },
-  data() {
-    return {
-      apiError: ''
-    };
-  },
   methods: {
     async createOrUpdate(word) {
-      this.apiError = '';
       try {
         await createWord(word);
         this.flash('Word created successfully!', 'success');
         this.$router.push('/words');
       } catch (err) {
-        if (err.response && err.response.data && err.response.data.message) {
-          this.apiError = err.response.data.message;
-        } else {
-          this.apiError = 'An error occurred while saving the word.';
-        }
+        const message =
+          err.response && err.response.data && err.response.data.message
+            ? err.response.data.message
+            : 'Failed to create word.';
+        this.flash(message, 'error');
       }
     }
   }

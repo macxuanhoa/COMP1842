@@ -260,6 +260,7 @@ export default {
         this.flash(newFav ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
       } catch (e) {
         console.error(e);
+        this.flash('Failed to update favourite status.', 'error');
       }
     },
     async onDelete(word) {
@@ -272,6 +273,7 @@ export default {
         this.words = this.words.filter(w => w._id !== word._id);
       } catch (e) {
         console.error(e);
+        this.flash('Failed to delete the word.', 'error');
       }
     }
   } 
@@ -370,9 +372,6 @@ export default {
 }
 .library-filter-grid .field {
   margin: 0 !important;
-}
-.library-loader {
-  margin: 3rem auto !important;
 }
 .library-table-wrapper {
   width: 100%;
