@@ -1,6 +1,6 @@
 const Word = require('../models/wordModel');
 const Category = require('../models/categoryModel');
-const { normalizeCategoryName } = require('../utils/categoryValidation');
+const { normalizeCategoryName, getCategoryNameError } = require('../utils/categoryValidation');
 
 async function ensureCategoryExists(rawName) {
   const name = normalizeCategoryName(rawName);
@@ -27,14 +27,13 @@ exports.list_all_words = async (req, res) => {
   try {
     const words = await Word.find({}).sort({ created_date: -1 });
     res.json(words);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Unexpected error' });
-  }
+  } catch (err) { handleError(res, err); }
 };
 
 exports.create_a_word = async (req, res) => {
   try {
+    const catErr = getCategoryNameError(req.body.category || '');
+    if (catErr) return res.status(400).json({ message: 'Category: ' + catErr });
     const newWord = new Word(req.body);
     const savedWord = await newWord.save();
     await ensureCategoryExists(savedWord.category);
@@ -62,6 +61,8 @@ exports.update_a_word = async (req, res) => {
     if (!word) {
       return res.status(404).json({ message: 'Word not found' });
     }
+    const catErr = getCategoryNameError(req.body.category || '');
+    if (catErr) return res.status(400).json({ message: 'Category: ' + catErr });
     Object.assign(word, req.body);
     const updatedWord = await word.save();
     await ensureCategoryExists(updatedWord.category);

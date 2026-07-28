@@ -6,6 +6,13 @@ function isGeneralName(name) {
   return normalizeCategoryName(name).toLowerCase() === 'general';
 }
 
+function handleError(res, err) {
+  if (err.name === 'ValidationError' || err.name === 'CastError') return res.status(400).json({ message: err.message });
+  if (err.code === 11000) return res.status(409).json({ message: 'Category already exists.' });
+  console.error(err);
+  return res.status(500).json({ message: 'Unexpected error' });
+}
+
 exports.list_all_categories = async (req, res) => {
   try {
     const categories = await Category.find({}).sort({ name: 1 });
@@ -40,15 +47,7 @@ exports.create_a_category = async (req, res) => {
     const newCategory = new Category({ name });
     const saved = await newCategory.save();
     res.status(201).json(saved);
-  } catch (err) {
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: err.message });
-    }
-    if (err.code === 11000) {
-      return res.status(409).send({ message: 'Category already exists.' });
-    }
-    res.status(500).send({ message: 'Unexpected error' });
-  }
+  } catch (err) { handleError(res, err); }
 };
 
 exports.update_a_category = async (req, res) => {
@@ -89,15 +88,7 @@ exports.update_a_category = async (req, res) => {
     category.name = newName;
     const updated = await category.save();
     res.json(updated);
-  } catch (err) {
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: err.message });
-    }
-    if (err.code === 11000) {
-      return res.status(409).send({ message: 'Category already exists.' });
-    }
-    res.status(500).send({ message: 'Unexpected error' });
-  }
+  } catch (err) { handleError(res, err); }
 };
 
 exports.delete_a_category = async (req, res) => {
@@ -120,7 +111,5 @@ exports.delete_a_category = async (req, res) => {
 
     await Category.findByIdAndDelete(req.params.categoryId);
     res.send({ message: 'Category deleted successfully', id: req.params.categoryId });
-  } catch (err) {
-    res.status(500).send({ message: 'Unexpected error' });
-  }
+  } catch (err) { handleError(res, err); }
 };

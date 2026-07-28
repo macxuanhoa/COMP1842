@@ -117,6 +117,7 @@ export default {
       }
     } catch (e) {
       console.error(e);
+      this.flash('Failed to load dashboard data.', 'error');
     }
   },
   methods: {

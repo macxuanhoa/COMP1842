@@ -201,9 +201,8 @@ export default {
         const wordData = await getWords();
         this.words = Array.isArray(wordData) ? wordData : [];
 
-        const maxPages = Math.ceil(this.categories.length / this.pageSize) || 1;
-        if (this.currentPage > maxPages) {
-          this.currentPage = maxPages;
+        if (this.currentPage > this.totalPages) {
+          this.currentPage = this.totalPages;
         }
       } catch (e) {
         console.error('Failed to load categories data', e);

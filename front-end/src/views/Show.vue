@@ -119,6 +119,7 @@ export default {
         this.flash(newFav ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
       } catch (e) {
         console.error(e);
+        this.flash('Failed to update favourite status.', 'error');
       }
     },
     async onDelete() {
@@ -131,6 +132,7 @@ export default {
         this.$router.push('/words');
       } catch (e) {
         console.error(e);
+        this.flash('Failed to delete the word.', 'error');
       }
     }
   }

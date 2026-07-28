@@ -26,7 +26,8 @@ const WordSchema = new Schema({
     default: 'General',
     trim: true,
     minlength: 2,
-    maxlength: 40
+    maxlength: 40,
+    match: [/[\p{L}\p{N}]/u, 'Category name must contain a letter or number.']
   },
   favourite: {
     type: Boolean,

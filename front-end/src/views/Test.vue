@@ -90,20 +90,20 @@
 
           <button
             class="ui primary fluid large button icon labeled"
-            :disabled="availableWordCount < 5"
+            :disabled="availableWordCount < 5 || !customCountValid"
             @click="startSession"
           >
             <i class="play icon"></i> Start Test
           </button>
+        </div>
 
-          <div v-if="availableWordCount === 0" class="ui warning message">
-            <i class="attention icon"></i>
-            No words available in this selection. Add some words first.
-          </div>
-          <div v-else-if="availableWordCount < 5" class="ui warning message">
-            <i class="attention icon"></i>
-            You need at least 5 words. Currently only {{ availableWordCount }} available.
-          </div>
+        <div v-if="availableWordCount === 0" class="ui warning message">
+          <i class="attention icon"></i>
+          No words available in this selection. Add some words first.
+        </div>
+        <div v-else-if="availableWordCount < 5" class="ui warning message">
+          <i class="attention icon"></i>
+          You need at least 5 words. Currently only {{ availableWordCount }} available.
         </div>
       </section>
     </div>
@@ -147,7 +147,7 @@ export default {
       return this.words.filter(w => w.favourite).length;
     },
     filteredWords() {
-      if (this.sourceFilter === 'fav') return this.words.filter(w => w.favourite);
+      if (this.sourceFilter === 'fav') return this.words.filter(w => w.favourite);  
       if (this.sourceFilter === 'category' && this.selectedCategory) {
         return this.words.filter(w => w.category === this.selectedCategory);
       }
@@ -158,6 +158,20 @@ export default {
     },
     presetSizes() {
       return [5, 10, 20].filter(n => n <= this.availableWordCount);
+    },
+    customCountValid() {
+      if (this.questionCount !== 'custom' || this.sourceFilter === 'category') return true;
+      const n = Number(this.customCount);
+      return Number.isFinite(n) && n >= 5 && n <= this.availableWordCount;
+    }
+  },
+  watch: {
+    availableWordCount(newMax) {
+      if (Number(this.customCount) > newMax) this.customCount = newMax;
+    },
+    customCount(newVal) {
+      const n = Number(newVal);
+      if (!Number.isFinite(n)) this.customCount = Math.min(5, this.availableWordCount || 5);
     }
   },
   async mounted() {
@@ -195,11 +209,12 @@ export default {
       let size = this.availableWordCount;
       if (this.sourceFilter !== 'category') {
         if (this.questionCount === 'custom') {
-          size = this.customCount;
+          size = Number(this.customCount);
         } else if (this.questionCount !== 'all') {
           size = Number(this.questionCount);
         }
       }
+      if (!Number.isFinite(size) || size < 1) size = this.availableWordCount;
       size = Math.min(size, this.availableWordCount);
 
       const list = [...this.filteredWords]
