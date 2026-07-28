@@ -140,6 +140,15 @@ export default {
 </script>
 
 <style scoped>
+.workspace-section-label {
+  display: block;
+  color: #687386;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
 .word-detail-error {
   display: block;
 }

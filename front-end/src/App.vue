@@ -184,7 +184,7 @@ body {
 .workspace-panel-icon.green { color: #21ba45; background: #edf9f0; }
 .workspace-panel-icon.orange { color: #f2711c; background: #fff3ea; }
 .workspace-panel-icon.violet { color: #6435c9; background: #f4f0fc; }
-.workspace-panel-icon .icon { margin: 0 !important; }
+.workspace-panel-icon .icon { margin: 0 !important; font-size: 0.95rem; line-height: 1; }
 .workspace-loader {
   margin: 3rem auto !important;
 }
