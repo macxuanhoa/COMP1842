@@ -54,7 +54,7 @@
               v-model="userAnswer"
               autocomplete="off"
               ref="answerInput"
-              :disabled="awaitingNext"
+              :disabled="waitingNext"
               required
             />
           </div>
@@ -69,7 +69,7 @@
         </div>
 
         <button
-          v-if="!awaitingNext"
+          v-if="!waitingNext"
           class="ui primary fluid button icon labeled"
           type="submit"
         >
@@ -81,7 +81,7 @@
           type="button"
           class="ui fluid button icon labeled quiz-next-btn"
           :class="feedback === 'correct' ? 'positive' : 'negative'"
-          @click="advanceQuestion"
+          @click="nextQuestion"
         >
           <i class="arrow right icon"></i>
           Next Question
@@ -95,7 +95,7 @@
         <h3>Quiz Completed!</h3>
         <p>You scored {{ score }} out of {{ totalQuestions }} ({{ scorePercent }}%).</p>
 
-        <div v-if="incorrectGuesses.length > 0" class="quiz-review">
+        <div v-if="wrongAnswers.length > 0" class="quiz-review">
           <h4><i class="attention icon"></i> Needs review</h4>
           <div class="quiz-review__table">
             <table class="ui celled compact table">
@@ -107,7 +107,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in incorrectGuesses" :key="idx">
+                <tr v-for="(item, idx) in wrongAnswers" :key="idx">
                   <td><strong>{{ item.word[qLang] }}</strong></td>
                   <td><span class="quiz-review__guess">{{ item.guess || '(blank)' }}</span></td>
                   <td><span class="ui green text">{{ item.word[aLang] }}</span></td>
@@ -148,7 +148,7 @@ export default {
   data() {
     return {
       randWords: [...this.words].sort(() => 0.5 - Math.random()),
-      incorrectGuesses: [],
+      wrongAnswers: [],
       userAnswer: '',
       score: 0,
       answeredCount: 0,
@@ -156,7 +156,7 @@ export default {
       testOver: false,
       feedback: null,
       lastCorrectAnswer: '',
-      awaitingNext: false
+      waitingNext: false
     };
   },
   computed: {
@@ -202,15 +202,15 @@ export default {
         this.score += 1;
       } else {
         this.feedback = 'wrong';
-        this.incorrectGuesses.push({
+        this.wrongAnswers.push({
           word: this.currWord,
           guess: this.userAnswer
         });
       }
 
-      this.awaitingNext = true;
+      this.waitingNext = true;
     },
-    saveAttempt() {
+    saveResult() {
       const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
       history.unshift({
         score: this.score,
@@ -221,16 +221,16 @@ export default {
       if (history.length > 50) history.pop();
       localStorage.setItem('coursework03_quiz_history', JSON.stringify(history));
     },
-    advanceQuestion() {
+    nextQuestion() {
       this.answeredCount += 1;
       this.feedback = null;
-      this.awaitingNext = false;
+      this.waitingNext = false;
       this.userAnswer = '';
       this.randWords.shift();
 
       if (this.randWords.length === 0) {
         this.testOver = true;
-        this.saveAttempt();
+        this.saveResult();
       } else {
         this.$nextTick(() => {
           if (this.$refs.answerInput) {

@@ -51,14 +51,14 @@
 
           <div class="field">
             <label>Word set</label>
-            <select class="ui dropdown fluid" v-model="sourceFilter">
+            <select class="ui dropdown fluid" v-model="wordSet">
               <option value="all">All words ({{ words.length }})</option>
               <option value="fav">Favourites only ({{ favCount }})</option>
               <option value="category">By category</option>
             </select>
           </div>
 
-          <div v-if="sourceFilter === 'category'" class="field">
+          <div v-if="wordSet === 'category'" class="field">
             <label>Category</label>
             <select class="ui dropdown fluid" v-model="selectedCategory">
               <option value="">Choose a category…</option>
@@ -68,7 +68,7 @@
             </select>
           </div>
 
-          <div v-if="sourceFilter !== 'category'" class="field">
+          <div v-if="wordSet !== 'category'" class="field">
             <label>Number of questions</label>
             <select class="ui dropdown fluid" v-model="questionCount">
               <option value="all">All ({{ availableWordCount }} words)</option>
@@ -77,7 +77,7 @@
             </select>
           </div>
 
-          <div v-if="questionCount === 'custom' && sourceFilter !== 'category'" class="field">
+          <div v-if="questionCount === 'custom' && wordSet !== 'category'" class="field">
             <label>Custom amount</label>
             <input
               type="number"
@@ -90,7 +90,7 @@
 
           <button
             class="ui primary fluid large button icon labeled"
-            :disabled="availableWordCount < 5 || !customCountValid"
+            :disabled="availableWordCount < 5 || !isCountValid"
             @click="startSession"
           >
             <i class="play icon"></i> Start Test
@@ -134,7 +134,7 @@ export default {
       categories: [],
       qLang: 'german',
       aLang: 'english',
-      sourceFilter: 'all',
+      wordSet: 'all',
       selectedCategory: '',
       questionCount: 'all',
       customCount: 5,
@@ -147,8 +147,8 @@ export default {
       return this.words.filter(w => w.favourite).length;
     },
     filteredWords() {
-      if (this.sourceFilter === 'fav') return this.words.filter(w => w.favourite);  
-      if (this.sourceFilter === 'category' && this.selectedCategory) {
+      if (this.wordSet === 'fav') return this.words.filter(w => w.favourite);  
+      if (this.wordSet === 'category' && this.selectedCategory) {
         return this.words.filter(w => w.category === this.selectedCategory);
       }
       return this.words;
@@ -159,8 +159,8 @@ export default {
     presetSizes() {
       return [5, 10, 20].filter(n => n <= this.availableWordCount);
     },
-    customCountValid() {
-      if (this.questionCount !== 'custom' || this.sourceFilter === 'category') return true;
+    isCountValid() {
+      if (this.questionCount !== 'custom' || this.wordSet === 'category') return true;
       const n = Number(this.customCount);
       return Number.isFinite(n) && n >= 5 && n <= this.availableWordCount;
     }
@@ -207,7 +207,7 @@ export default {
     },
     startSession() {
       let size = this.availableWordCount;
-      if (this.sourceFilter !== 'category') {
+      if (this.wordSet !== 'category') {
         if (this.questionCount === 'custom') {
           size = Number(this.customCount);
         } else if (this.questionCount !== 'all') {

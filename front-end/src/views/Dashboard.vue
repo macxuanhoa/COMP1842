@@ -41,7 +41,7 @@
 
       <h3 class="ui dividing header">Recent Quiz Attempts</h3>
       <p v-if="quizHistory.length" style="color: #687386; margin-bottom: 0.75rem;">
-        Average of last {{ Math.min(quizHistory.length, 5) }}: <strong style="color: #2185d0;">{{ recentAvg }}%</strong>
+        Average of last {{ Math.min(quizHistory.length, 5) }}: <strong style="color: #2185d0;">{{ recentAverage }}%</strong>
       </p>
 
       <div v-if="quizHistory.length === 0" class="ui message">
@@ -96,7 +96,7 @@ export default {
     };
   },
   computed: {
-    recentAvg() {
+    recentAverage() {
       const recent = this.quizHistory.slice(0, 5);
       if (!recent.length) return 0;
       const sum = recent.reduce((acc, a) => acc + this.percent(a), 0);

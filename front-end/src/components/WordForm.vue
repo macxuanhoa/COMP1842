@@ -117,17 +117,17 @@ export default {
     };
   },
   computed: {
-    normalizedCategory() {
+    cleanCategory() {
       return this.isCustomMode
         ? normalizeCategoryName(this.customCategory)
         : normalizeCategoryName(this.selectedCategory);
     },
-    normalizedWordData() {
+    cleanWordData() {
       return {
         german: (this.word.german || '').trim(),
         english: (this.word.english || '').trim(),
         french: (this.word.french || '').trim(),
-        category: this.normalizedCategory,
+        category: this.cleanCategory,
         favourite: Boolean(this.word.favourite)
       };
     }
@@ -158,7 +158,7 @@ export default {
       this.errors.french = '';
       this.errors.category = '';
 
-      const word = this.normalizedWordData;
+      const word = this.cleanWordData;
 
       if (!word.german) {
         this.errors.german = 'German is required.';
@@ -193,7 +193,7 @@ export default {
       }
 
       const payload = {
-        ...this.normalizedWordData
+        ...this.cleanWordData
       };
 
       if (this.word._id) {

@@ -74,7 +74,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="cat in paginatedCategories" :key="cat._id">
+              <tr v-for="cat in pagedCategories" :key="cat._id">
                 <!-- Name Column -->
                 <td>
                   <div v-if="editId === cat._id" class="ui input fluid">
@@ -115,7 +115,7 @@
                     <button class="ui basic primary tiny button icon labeled" @click="onStartEdit(cat)">
                       <i class="edit icon"></i> Edit
                     </button>
-                    <button class="ui basic negative tiny button icon labeled" @click="onTriggerDelete(cat)">
+                    <button class="ui basic negative tiny button icon labeled" @click="onDelete(cat)">
                       <i class="trash icon"></i> Delete
                     </button>
                   </div>
@@ -177,7 +177,7 @@ export default {
     totalPages() {
       return Math.ceil(this.categories.length / this.pageSize) || 1;
     },
-    paginatedCategories() {
+    pagedCategories() {
       const start = (this.currentPage - 1) * this.pageSize;
       const end = start + this.pageSize;
       return this.categories.slice(start, end);
@@ -212,7 +212,7 @@ export default {
       const normalizedCatName = normalizeCategoryName(catName).toLowerCase();
       return this.words.filter(word => normalizeCategoryName(word.category).toLowerCase() === normalizedCatName).length;
     },
-    handleApiError(e, fallback) {
+    showError(e, fallback) {
       if (e.response && e.response.data && e.response.data.message) {
         this.flash(e.response.data.message, 'error');
       } else {
@@ -257,7 +257,7 @@ export default {
         await this.loadData();
       } catch (e) {
         console.error(e);
-        this.handleApiError(e, 'Failed to create category.');
+        this.showError(e, 'Failed to create category.');
       }
     },
     onStartEdit(cat) {
@@ -281,10 +281,10 @@ export default {
         await this.loadData();
       } catch (e) {
         console.error(e);
-        this.handleApiError(e, 'Failed to update category.');
+        this.showError(e, 'Failed to update category.');
       }
     },
-    async onTriggerDelete(cat) {
+    async onDelete(cat) {
       if (isGeneralCategoryName(cat.name)) return;
       const wordCount = this.getWordCount(cat.name);
       if (wordCount > 0) {
@@ -300,7 +300,7 @@ export default {
         await this.loadData();
       } catch (e) {
         console.error(e);
-        this.handleApiError(e, 'Failed to delete category.');
+        this.showError(e, 'Failed to delete category.');
       }
     },
     prevPage() {
