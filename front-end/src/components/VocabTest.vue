@@ -145,16 +145,16 @@ export default {
   },
   data() {
     return {
-      randWords: [...this.words].sort(() => 0.5 - Math.random()),
-      wrongAnswers: [],
-      userAnswer: '',
-      score: 0,
-      answeredCount: 0,
-      totalQuestions: this.words.length,
-      testOver: false,
-      feedback: null,
-      lastCorrectAnswer: '',
-      waitingNext: false,
+      randWords: [...this.words].sort(() => 0.5 - Math.random()), // Danh sách câu hỏi.
+      wrongAnswers: [], // Danh sách câu sai.
+      userAnswer: '', // Câu trả lời hiện tại.
+      score: 0, // Điểm hiện tại.
+      answeredCount: 0, // Số câu đã làm.
+      totalQuestions: this.words.length, // Tổng số câu.
+      testOver: false, // Trạng thái kết thúc.
+      feedback: null, // Kết quả câu vừa nộp.
+      lastCorrectAnswer: '', // Đáp án đúng gần nhất.
+      waitingNext: false, // Trạng thái chờ sang câu.
       langInfo: {
         german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
         english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
@@ -164,15 +164,19 @@ export default {
   },
   computed: {
     currWord() {
+      // Lấy phần tử đầu của `randWords` làm câu hỏi hiện tại.
       return this.randWords.length ? this.randWords[0] : null;
     },
     progressPercent() {
+      // Dùng `answeredCount` và `totalQuestions` để tính phần trăm tiến độ cho thanh progress.
       return Math.round((this.answeredCount / this.totalQuestions) * 100) || 0;
     },
     scorePercent() {
+      // Dùng `score` và `totalQuestions` để tính phần trăm điểm cuối bài.
       return Math.round((this.score / this.totalQuestions) * 100) || 0;
     },
     feedbackClass() {
+      // Đổi class Semantic UI theo `feedback` để message hiện đúng màu.
       return this.feedback === 'correct' ? 'positive' : 'negative';
     },
     feedbackIcon() {
@@ -187,6 +191,7 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
+      // Sau khi render xong, focus vào ô trả lời để user gõ ngay.
       if (this.$refs.answerInput) {
         this.$refs.answerInput.focus();
       }
@@ -194,6 +199,7 @@ export default {
   },
   methods: {
     onSubmit() {
+      // Lấy đáp án đúng từ `currWord[aLang]`, chuẩn hóa cùng `userAnswer`, rồi so sánh để chấm câu hiện tại.
       const correctVal = this.currWord[this.aLang].trim().toLowerCase();
       const userVal = this.userAnswer.trim().toLowerCase();
 
@@ -201,9 +207,11 @@ export default {
       this.lastCorrectAnswer = this.currWord[this.aLang];
 
       if (isCorrect) {
+        // Nếu đúng thì tăng `score` và lưu `feedback` để UI hiện trạng thái đúng.
         this.feedback = 'correct';
         this.score += 1;
       } else {
+        // Nếu sai thì đẩy dữ liệu vào `wrongAnswers` để cuối bài render bảng cần ôn lại.
         this.feedback = 'wrong';
         this.wrongAnswers.push({
           word: this.currWord,
@@ -211,9 +219,11 @@ export default {
         });
       }
 
+      // Bật `waitingNext` để khóa ô nhập và chuyển nút sang "Next Question".
       this.waitingNext = true;
     },
     saveResult() {
+      // Đọc lịch sử cũ từ `localStorage`, thêm kết quả mới vào đầu mảng rồi lưu lại vào key `coursework03_quiz_history`.
       const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
       history.unshift({
         score: this.score,
@@ -221,10 +231,12 @@ export default {
         timestamp: new Date().toISOString(),
         wordIds: this.words.map(w => w._id)
       });
+      // Chỉ giữ tối đa 50 lần để `localStorage` không phình quá lớn.
       if (history.length > 50) history.pop();
       localStorage.setItem('coursework03_quiz_history', JSON.stringify(history));
     },
     nextQuestion() {
+      // Tăng số câu đã làm, xóa trạng thái tạm của câu cũ và bỏ phần tử đầu trong `randWords` để sang câu tiếp theo.
       this.answeredCount += 1;
       this.feedback = null;
       this.waitingNext = false;
@@ -232,10 +244,12 @@ export default {
       this.randWords.shift();
 
       if (this.randWords.length === 0) {
+        // Nếu hết câu thì bật `testOver` và gọi `saveResult()` để lưu kết quả vào `localStorage`.
         this.testOver = true;
         this.saveResult();
       } else {
         this.$nextTick(() => {
+          // Nếu còn câu tiếp theo thì focus lại ô nhập.
           if (this.$refs.answerInput) {
             this.$refs.answerInput.focus();
           }

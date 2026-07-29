@@ -17,7 +17,7 @@
       </div>
     </header>
 
-    <!-- Add Category Form -->
+    <!-- Form thêm category -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-heading__title">
@@ -50,7 +50,7 @@
       </form>
     </section>
 
-    <!-- Categories List -->
+    <!-- Danh sách category -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-heading__title">
@@ -76,7 +76,7 @@
             </thead>
             <tbody>
               <tr v-for="cat in categories" :key="cat._id">
-                <!-- Name Column -->
+                <!-- Cột tên -->
                 <td>
                   <div v-if="editId === cat._id" class="ui input fluid">
                     <input
@@ -96,14 +96,14 @@
                   </div>
                 </td>
 
-                <!-- Words Linked Column -->
+                <!-- Cột số từ đang dùng -->
                 <td class="center aligned">
                   <span class="ui circular label category-count">{{ getWordCount(cat.name) }}</span>
                 </td>
 
-                <!-- Action buttons -->
+                <!-- Cột thao tác -->
                 <td class="center aligned">
-                  <!-- If editing this row -->
+                  <!-- Đang sửa dòng này -->
                   <div v-if="editId === cat._id" class="category-row-actions">
                     <button class="ui positive tiny button" @click="onSaveEdit(cat._id)">
                       <i class="save icon"></i>
@@ -112,7 +112,7 @@
                     <button class="ui basic tiny button" @click="onCancelEdit">Cancel</button>
                   </div>
 
-                  <!-- If not editing and not protected -->
+                  <!-- Không ở chế độ sửa và không bị khóa -->
                   <div v-else-if="!isGeneral(cat.name)" class="category-row-actions">
                     <button class="ui basic primary tiny button icon labeled" @click="onStartEdit(cat)">
                       <i class="edit icon"></i> Edit
@@ -122,7 +122,7 @@
                     </button>
                   </div>
 
-                  <!-- If protected -->
+                  <!-- Category bị khóa -->
                   <div v-else>
                     <span class="category-locked">
                       <i class="lock icon"></i>
@@ -146,29 +146,35 @@ export default {
   name: 'categories',
   data() {
     return {
-      categories: [],
-      words: [],
-      newCategoryName: '',
-      editId: '',
-      editName: ''
+      categories: [], // Danh sách category.
+      words: [], // Danh sách từ.
+      newCategoryName: '', // Tên category mới.
+      editId: '', // Id đang sửa.
+      editName: '' // Tên đang sửa.
     };
   },
   async mounted() {
+    // Khi mở trang, gọi `loadData()` để nạp cả category lẫn words vì màn này cần hai nguồn dữ liệu.
     await this.loadData();
   },
   methods: {
     isGeneral(name) {
+      // Chuẩn hóa `name` rồi kiểm tra có phải `General` không để khóa sửa và xóa.
       return (name || '').trim().toLowerCase() === 'general';
     },
     async loadData() {
       try {
+        // Gọi `getCategories()` để lấy category từ backend, sắp lại thứ tự rồi lưu vào `this.categories`.
         const categoryList = await getCategories();
+
+        // Giữ `General` đứng đầu, các category còn lại sắp xếp alphabet để bảng dễ nhìn hơn.
         const general = categoryList.find(cat => this.isGeneral(cat.name));
         const others = categoryList
           .filter(cat => !this.isGeneral(cat.name))
           .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
         this.categories = general ? [general, ...others] : others;
 
+        // Gọi thêm `getWords()` để lấy danh sách từ và lưu vào `this.words`, vì cột "Words Linked" cần dữ liệu này để đếm.
         const wordData = await getWords();
         this.words = Array.isArray(wordData) ? wordData : [];
       } catch (e) {
@@ -176,11 +182,13 @@ export default {
       }
     },
     getWordCount(catName) {
+      // Dùng `this.words` để đếm xem một category đang được bao nhiêu từ sử dụng.
       return this.words.filter(
         word => (word.category || '').trim().toLowerCase() === (catName || '').trim().toLowerCase()
       ).length;
     },
     async onCreateCategory() {
+      // Lấy tên từ `newCategoryName`, trim lại, kiểm tra hợp lệ rồi gửi qua `createCategory()` để lưu vào database.
       const name = this.newCategoryName.trim();
       if (!name) {
         this.flash('Category name is required.', 'error');
@@ -196,6 +204,7 @@ export default {
       }
 
       try {
+        // Tạo xong thì xóa ô nhập `newCategoryName` và gọi lại `loadData()` để bảng lấy dữ liệu mới từ backend.
         await createCategory({ name });
         this.flash('Category created successfully!', 'success');
         this.newCategoryName = '';
@@ -209,15 +218,18 @@ export default {
       }
     },
     onStartEdit(cat) {
+      // Lưu `_id` vào `editId` và tên hiện tại vào `editName` để chuyển đúng dòng sang chế độ sửa.
       if (this.isGeneral(cat.name)) return;
       this.editId = cat._id;
       this.editName = cat.name;
     },
     onCancelEdit() {
+      // Xóa `editId` và `editName` để thoát chế độ sửa, không lưu gì xuống backend.
       this.editId = '';
       this.editName = '';
     },
     async onSaveEdit(id) {
+      // Lấy tên mới từ `editName`, kiểm tra hợp lệ rồi gửi qua `updateCategory()` để cập nhật trong database.
       const name = this.editName.trim();
       if (!name) {
         this.flash('Category name is required.', 'error');
@@ -233,6 +245,7 @@ export default {
       }
 
       try {
+        // Backend sẽ đổi tên category và đồng bộ tên mới xuống các word đang dùng category đó; sau đó gọi `loadData()` để nạp lại bảng.
         await updateCategory({ _id: id, name });
         this.flash('Category renamed successfully!', 'success');
         this.editId = '';
@@ -247,19 +260,25 @@ export default {
       }
     },
     async onDelete(cat) {
+      // Chặn xóa nếu đây là `General` vì category mặc định này bị khóa.
       if (this.isGeneral(cat.name)) return;
 
+      // Dùng `getWordCount()` để kiểm tra category còn đang được từ nào dùng không; còn dùng thì không cho xóa.
       const wordCount = this.getWordCount(cat.name);
       if (wordCount > 0) {
         this.flash('Cannot delete a category that has words assigned.', 'error');
         return;
       }
+
+      // Hỏi lại user bằng `window.confirm()` trước khi gọi `deleteCategory()` xóa khỏi database.
       if (!window.confirm(`Are you sure you want to delete the category "${cat.name}"?`)) {
         return;
       }
       try {
         await deleteCategory(cat._id);
         this.flash('Category deleted successfully.', 'success');
+
+        // Xóa xong thì gọi `loadData()` để cập nhật lại danh sách category và số từ đang liên kết.
         await this.loadData();
       } catch (e) {
         const message =

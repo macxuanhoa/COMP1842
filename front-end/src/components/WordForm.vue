@@ -64,6 +64,7 @@ export default {
   props: {
     word: {
       type: Object,
+      // Nếu là trang tạo mới thì dùng giá trị mặc định; nếu là trang sửa thì nhận dữ liệu từ view cha.
       default: () => ({
         german: '',
         english: '',
@@ -75,12 +76,13 @@ export default {
   },
   data() {
     return {
-      categories: [],
-      errorMessage: ''
+      categories: [], // Danh sách category.
+      errorMessage: '' // Lỗi của form.
     };
   },
   async mounted() {
     try {
+      // Gọi `getCategoryNames()` để lấy category từ backend, bỏ `General` bị trùng và lưu phần còn lại vào `this.categories`.
       const names = await getCategoryNames();
       this.categories = names
         .filter(name => name.toLowerCase() !== 'general')
@@ -91,6 +93,7 @@ export default {
   },
   methods: {
     onSubmit() {
+      // Kiểm tra 3 ô ngôn ngữ đã có dữ liệu chưa; nếu thiếu thì lưu lỗi vào `errorMessage` để hiện ngay trên form.
       if (
         !this.word.german ||
         !this.word.english ||
@@ -100,6 +103,7 @@ export default {
         return;
       }
 
+      // Xóa lỗi cũ rồi phát `createOrUpdate` lên component cha; view cha sẽ quyết định gọi API tạo mới hay cập nhật.
       this.errorMessage = '';
       this.$emit('createOrUpdate', { ...this.word });
     }

@@ -187,18 +187,20 @@ export default {
   name: 'words',
   data() {
     return {
-      words: [],
-      categories: ['General'],
-      search: '',
-      categoryFilter: '',
-      favouriteFilter: 'all',
-      sortBy: 'newest'
+      words: [], // Danh sách từ.
+      categories: ['General'], // Danh sách category.
+      search: '', // Từ khóa tìm.
+      categoryFilter: '', // Category đang lọc.
+      favouriteFilter: 'all', // Trạng thái favourite.
+      sortBy: 'newest' // Kiểu sắp xếp.
     };
   },
   computed: {
     filteredWords() {
+      // Clone từ `this.words` trước để filter/sort mà không đụng trực tiếp mảng gốc.
       let result = [...this.words];
 
+      // Dùng `search` để lọc theo 3 cột German, English, French rồi trả ra danh sách đang nhìn thấy trên bảng.
       const lowerSearch = this.search.trim().toLowerCase();
       if (lowerSearch) {
         result = result.filter(word =>
@@ -208,16 +210,19 @@ export default {
         );
       }
 
+      // Dùng `categoryFilter` để chỉ giữ lại các từ thuộc category đang chọn.
       if (this.categoryFilter) {
         result = result.filter(word => word.category === this.categoryFilter);
       }
 
+      // Dùng `favouriteFilter` để tách danh sách favourite hoặc non-favourite.
       if (this.favouriteFilter === 'fav') {
         result = result.filter(word => word.favourite);
       } else if (this.favouriteFilter === 'normal') {
         result = result.filter(word => !word.favourite);
       }
 
+      // Dùng `sortBy` để sắp xếp theo `created_date`, rồi trả kết quả cuối cho template render.
       if (this.sortBy === 'newest') {
         result.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
       } else {
@@ -228,12 +233,14 @@ export default {
     }
   },
   async mounted() {
+    // Khi mở trang, gọi 2 hàm để nạp danh sách từ vào `words` và danh sách category vào `categories`.
     await this.loadWords();
     await this.loadCategories();
   },
   methods: {
     async loadWords() {
       try {
+        // Gọi `getWords()` để lấy toàn bộ từ từ backend rồi lưu vào `this.words` cho bảng, search và filter cùng dùng.
         this.words = await getWords();
       } catch (e) {
         console.error(e);
@@ -241,6 +248,7 @@ export default {
     },
     async loadCategories() {
       try {
+        // Gọi `getCategoryNames()` để lấy tên category từ backend, sau đó sắp xếp và lưu vào `this.categories` cho dropdown filter.
         const categoryNames = await getCategoryNames();
         this.categories = categoryNames.sort((a, b) =>
           a.toLowerCase().localeCompare(b.toLowerCase())
@@ -250,6 +258,7 @@ export default {
       }
     },
     async onToggleFavourite(word) {
+      // Đảo `word.favourite`, gửi bản mới qua `updateWord()`, rồi ghi kết quả trả về vào đúng phần tử trong `this.words`.
       const newFav = !word.favourite;
       try {
         const updatedWord = await updateWord({ ...word, favourite: newFav });
@@ -264,10 +273,12 @@ export default {
       }
     },
     async onDelete(word) {
+      // Hỏi lại bằng `window.confirm()` trước khi xóa vì thao tác này sẽ xóa dữ liệu khỏi backend.
       if (!window.confirm('Are you sure you want to delete this word?')) {
         return;
       }
       try {
+        // Gọi `deleteWord()` để xóa trong database, rồi lọc lại `this.words` để bảng cập nhật ngay trên UI.
         await deleteWord(word._id);
         this.flash('Word deleted successfully!', 'success');
         this.words = this.words.filter(w => w._id !== word._id);

@@ -50,11 +50,12 @@ export default {
   },
   data() {
     return {
-      word: null
+      word: null // Từ đang sửa.
     };
   },
   async mounted() {
     try {
+      // Đọc `id` từ route, gọi `getWord()` và lưu kết quả vào `this.word` để đổ sẵn lên form.
       this.word = await getWord(this.$route.params.id);
     } catch (err) {
       console.error(err);
@@ -64,10 +65,13 @@ export default {
   methods: {
     async createOrUpdate(updatedWord) {
       try {
+        // Nhận dữ liệu đã sửa từ `WordForm`, gọi `updateWord()` để cập nhật lại trong database.
         await updateWord(updatedWord);
         this.flash('Word updated successfully!', 'success');
+        // Cập nhật xong thì quay về trang danh sách.
         this.$router.push('/words');
       } catch (err) {
+        // Nếu backend có message cụ thể thì dùng luôn message đó để báo lỗi.
         const message =
           err.response && err.response.data && err.response.data.message
             ? err.response.data.message

@@ -48,7 +48,12 @@
 
       <div class="ui form word-detail-languages">
         <div class="field">
-          <label>German</label>
+          <label>
+            German
+            <button type="button" class="ui mini basic icon button speak-btn" @click="speak(word.german, 'de-DE')" title="Listen">
+              <i class="volume up icon"></i>
+            </button>
+          </label>
           <div class="ui labeled input fluid">
             <div class="ui label">
               <i class="germany flag"></i> DE
@@ -58,7 +63,12 @@
         </div>
 
         <div class="field">
-          <label>English</label>
+          <label>
+            English
+            <button type="button" class="ui mini basic icon button speak-btn" @click="speak(word.english, 'en-US')" title="Listen">
+              <i class="volume up icon"></i>
+            </button>
+          </label>
           <div class="ui labeled input fluid">
             <div class="ui label">
               <i class="united kingdom flag"></i> EN
@@ -68,7 +78,12 @@
         </div>
 
         <div class="field">
-          <label>French</label>
+          <label>
+            French
+            <button type="button" class="ui mini basic icon button speak-btn" @click="speak(word.french, 'fr-FR')" title="Listen">
+              <i class="volume up icon"></i>
+            </button>
+          </label>
           <div class="ui labeled input fluid">
             <div class="ui label">
               <i class="france flag"></i> FR
@@ -99,18 +114,27 @@ export default {
   name: 'show',
   data() {
     return {
-      word: null
+      word: null // Chi tiết từ.
     };
   },
   async mounted() {
     try {
+      // Đọc `id` từ route, gọi `getWord()` để lấy chi tiết từ từ backend rồi lưu vào `this.word`.
       this.word = await getWord(this.$route.params.id);
     } catch (e) {
       console.error(e);
     }
   },
   methods: {
+    speak(text, lang) {
+      // Dùng Web Speech API để phát âm nội dung đang xem; không lưu dữ liệu, chỉ đọc trực tiếp trên trình duyệt.
+      if (!text || !window.speechSynthesis) return;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang;
+      window.speechSynthesis.speak(utter);
+    },
     async onToggleFavourite() {
+      // Nếu `word` đã có, đảo `favourite`, gửi qua `updateWord()`, rồi ghi dữ liệu backend trả về lại vào `this.word`.
       if (!this.word) return;
       const newFav = !this.word.favourite;
       try {
@@ -123,6 +147,7 @@ export default {
       }
     },
     async onDelete() {
+      // Xác nhận bằng `window.confirm()`, gọi `deleteWord()` để xóa khỏi backend, rồi chuyển về trang `/words`.
       if (!window.confirm('Are you sure you want to delete this word?')) {
         return;
       }
@@ -206,6 +231,15 @@ export default {
   gap: 1rem;
 }
 .word-detail-languages .field {
+  margin: 0 !important;
+}
+.word-detail-languages .field > label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.speak-btn {
+  padding: 0.25rem 0.4rem !important;
   margin: 0 !important;
 }
 .word-detail-languages input[readonly] {

@@ -7,6 +7,7 @@ import Show from './views/Show.vue';
 import Edit from './views/Edit.vue';
 import Categories from './views/Categories.vue';
 import Test from './views/Test.vue';
+import AboutMe from './views/AboutMe.vue';
 import NotFound from './views/NotFound.vue';
 
 Vue.use(Router);
@@ -54,6 +55,11 @@ export default new Router({
       path: '/test',
       name: 'test',
       component: Test
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: AboutMe
     },
     {
       path: '*',

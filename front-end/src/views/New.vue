@@ -46,10 +46,13 @@ export default {
   methods: {
     async createOrUpdate(word) {
       try {
+        // Nhận dữ liệu từ `WordForm`, gọi `createWord()` để lưu từ mới vào database.
         await createWord(word);
+        // Tạo xong thì hiện flash message và chuyển về trang danh sách.
         this.flash('Word created successfully!', 'success');
         this.$router.push('/words');
       } catch (err) {
+        // Nếu backend trả về lỗi chi tiết thì lấy message đó để hiển thị cho user.
         const message =
           err.response && err.response.data && err.response.data.message
             ? err.response.data.message
