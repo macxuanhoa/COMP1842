@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page--narrow">
+  <div class="workspace-page workspace-page-narrow">
     <header class="workspace-header">
       <div>
         <div class="workspace-eyebrow">
@@ -9,7 +9,7 @@
         <h1>Edit Word</h1>
         <p>Update translations, category, and favourite status.</p>
       </div>
-      <div class="workspace-header__actions">
+      <div class="workspace-header-actions">
         <router-link to="/words" class="ui basic primary button">
           <i class="arrow left icon"></i>
           Back to Library
@@ -24,7 +24,7 @@
 
     <section v-else class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon orange" aria-hidden="true">
             <i class="language icon"></i>
           </span>
@@ -50,32 +50,25 @@ export default {
   },
   data() {
     return {
-      word: null // Từ đang sửa.
+      word: null
     };
   },
   async mounted() {
     try {
-      // Đọc `id` từ route, gọi `getWord()` và lưu kết quả vào `this.word` để đổ sẵn lên form.
       this.word = await getWord(this.$route.params.id);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       this.flash('Failed to load word details.', 'error');
     }
   },
   methods: {
     async createOrUpdate(updatedWord) {
       try {
-        // Nhận dữ liệu đã sửa từ `WordForm`, gọi `updateWord()` để cập nhật lại trong database.
         await updateWord(updatedWord);
         this.flash('Word updated successfully!', 'success');
-        // Cập nhật xong thì quay về trang danh sách.
         this.$router.push('/words');
-      } catch (err) {
-        // Nếu backend có message cụ thể thì dùng luôn message đó để báo lỗi.
-        const message =
-          err.response && err.response.data && err.response.data.message
-            ? err.response.data.message
-            : 'Failed to update word.';
+      } catch (error) {
+        const message = error?.response?.data?.message || 'Failed to update word.';
         this.flash(message, 'error');
       }
     }

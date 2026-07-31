@@ -16,5 +16,5 @@ Vue.use(VueFlashMessage, {
 
 new Vue({
   router,
-  render: h => h(App)
+  render: createElement => createElement(App)
 }).$mount('#app');

@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page--narrow">
+  <div class="workspace-page workspace-page-narrow">
     <header class="workspace-header">
       <div>
         <div class="workspace-eyebrow">
@@ -9,7 +9,7 @@
         <h1>Word Details</h1>
         <p>Review translations, category, and favourite status.</p>
       </div>
-      <div class="workspace-header__actions">
+      <div class="workspace-header-actions">
         <router-link to="/words" class="ui basic primary button">
           <i class="arrow left icon"></i>
           Back to Library
@@ -39,7 +39,7 @@
           :class="{ active: word.favourite }"
           :aria-label="word.favourite ? 'Remove from favourites' : 'Add to favourites'"
           title="Toggle favourite"
-          @click="onToggleFavourite"
+          @click="toggleFavourite"
         >
           <i :class="[word.favourite ? 'star icon' : 'star outline icon']"></i>
           <span>{{ word.favourite ? 'Favourite' : 'Add favourite' }}</span>
@@ -50,7 +50,7 @@
         <div class="field">
           <label>
             German
-            <button type="button" class="ui mini basic icon button speak-btn" @click="speak(word.german, 'de-DE')" title="Listen">
+            <button type="button" class="ui mini basic icon button speak-btn" @click="speakWord(word.german, 'de-DE')" title="Listen">
               <i class="volume up icon"></i>
             </button>
           </label>
@@ -65,7 +65,7 @@
         <div class="field">
           <label>
             English
-            <button type="button" class="ui mini basic icon button speak-btn" @click="speak(word.english, 'en-US')" title="Listen">
+            <button type="button" class="ui mini basic icon button speak-btn" @click="speakWord(word.english, 'en-US')" title="Listen">
               <i class="volume up icon"></i>
             </button>
           </label>
@@ -80,7 +80,7 @@
         <div class="field">
           <label>
             French
-            <button type="button" class="ui mini basic icon button speak-btn" @click="speak(word.french, 'fr-FR')" title="Listen">
+            <button type="button" class="ui mini basic icon button speak-btn" @click="speakWord(word.french, 'fr-FR')" title="Listen">
               <i class="volume up icon"></i>
             </button>
           </label>
@@ -94,11 +94,11 @@
       </div>
 
       <div class="word-detail-actions">
-        <div class="word-detail-actions__primary">
+        <div class="word-detail-actions-primary">
           <router-link :to="{ name: 'edit', params: { id: word._id } }" class="ui primary button icon labeled">
             <i class="edit icon"></i> Edit Word
           </router-link>
-          <button type="button" class="ui basic negative button icon labeled" @click="onDelete">
+          <button type="button" class="ui basic negative button icon labeled" @click="deleteWordItem">
             <i class="trash icon"></i> Delete
           </button>
         </div>
@@ -114,40 +114,36 @@ export default {
   name: 'show',
   data() {
     return {
-      word: null // Chi tiết từ.
+      word: null
     };
   },
   async mounted() {
     try {
-      // Đọc `id` từ route, gọi `getWord()` để lấy chi tiết từ từ backend rồi lưu vào `this.word`.
       this.word = await getWord(this.$route.params.id);
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   },
   methods: {
-    speak(text, lang) {
-      // Dùng Web Speech API để phát âm nội dung đang xem; không lưu dữ liệu, chỉ đọc trực tiếp trên trình duyệt.
+    speakWord(text, languageCode) {
       if (!text || !window.speechSynthesis) return;
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = lang;
-      window.speechSynthesis.speak(utter);
+      const speech = new SpeechSynthesisUtterance(text);
+      speech.lang = languageCode;
+      window.speechSynthesis.speak(speech);
     },
-    async onToggleFavourite() {
-      // Nếu `word` đã có, đảo `favourite`, gửi qua `updateWord()`, rồi ghi dữ liệu backend trả về lại vào `this.word`.
+    async toggleFavourite() {
       if (!this.word) return;
-      const newFav = !this.word.favourite;
+      const nextFavouriteValue = !this.word.favourite;
       try {
-        const updatedWord = await updateWord({ ...this.word, favourite: newFav });
+        const updatedWord = await updateWord({ ...this.word, favourite: nextFavouriteValue });
         this.word = updatedWord;
-        this.flash(newFav ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
-      } catch (e) {
-        console.error(e);
+        this.flash(nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
+      } catch (error) {
+        console.error(error);
         this.flash('Failed to update favourite status.', 'error');
       }
     },
-    async onDelete() {
-      // Xác nhận bằng `window.confirm()`, gọi `deleteWord()` để xóa khỏi backend, rồi chuyển về trang `/words`.
+    async deleteWordItem() {
       if (!window.confirm('Are you sure you want to delete this word?')) {
         return;
       }
@@ -155,8 +151,8 @@ export default {
         await deleteWord(this.word._id);
         this.flash('Word deleted successfully!', 'success');
         this.$router.push('/words');
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error(error);
         this.flash('Failed to delete the word.', 'error');
       }
     }
@@ -255,7 +251,7 @@ export default {
   padding-top: 1.25rem;
   border-top: 1px solid #e5e9f0;
 }
-.word-detail-actions__primary {
+.word-detail-actions-primary {
   display: flex;
   gap: 0.65rem;
 }

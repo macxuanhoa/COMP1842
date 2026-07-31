@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page--narrow not-found-page">
+  <div class="workspace-page workspace-page-narrow not-found-page">
     <section class="ui segment workspace-panel not-found-panel">
       <span class="not-found-icon" aria-hidden="true">
         <i class="compass outline icon"></i>

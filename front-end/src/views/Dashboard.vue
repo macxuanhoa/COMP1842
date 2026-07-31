@@ -9,7 +9,7 @@
         <h1>Dashboard</h1>
         <p>Overview of your vocabulary collection and quiz performance.</p>
       </div>
-      <div class="workspace-header__actions">
+      <div class="workspace-header-actions">
         <router-link to="/test" class="ui primary button">
           <i class="play icon"></i>
           Practice now
@@ -63,13 +63,13 @@
               <strong>{{ attempt.score }}</strong> / {{ attempt.total }}
             </td>
             <td class="center aligned">
-              <span class="ui label" :class="scoreClass(attempt)">{{ percent(attempt) }}%</span>
+              <span class="ui label" :class="getScoreClass(attempt)">{{ getScorePercent(attempt) }}%</span>
             </td>
             <td class="right aligned">
               <button
                 v-if="attempt.wordIds && attempt.wordIds.length"
                 class="ui basic primary mini button"
-                @click="retakeQuiz(attempt)"
+                @click="retakeTest(attempt)"
               >
                 <i class="redo icon"></i> Retake
               </button>
@@ -97,11 +97,11 @@ export default {
   },
   computed: {
     recentAverage() {
-      // Lấy 5 lần gần nhất trong `quizHistory`, đổi sang phần trăm bằng `percent()`, rồi tính trung bình để hiển thị trên dashboard.
-      const recent = this.quizHistory.slice(0, 5);
-      if (!recent.length) return 0;
-      const sum = recent.reduce((acc, a) => acc + this.percent(a), 0);
-      return Math.round(sum / recent.length);
+      // Lấy 5 lần gần nhất trong `quizHistory`, đổi sang phần trăm bằng `getScorePercent()`, rồi tính trung bình để hiển thị trên dashboard.
+      const recentAttempts = this.quizHistory.slice(0, 5);
+      if (!recentAttempts.length) return 0;
+      const totalPercent = recentAttempts.reduce((sum, attempt) => sum + this.getScorePercent(attempt), 0);
+      return Math.round(totalPercent / recentAttempts.length);
     }
   },
   async mounted() {
@@ -110,43 +110,46 @@ export default {
       const words = await getWords();
       const categories = await getCategories();
       this.totalWords = words.length;
-      this.favouriteCount = words.filter(w => w.favourite).length;
+      this.favouriteCount = words.filter(word => word.favourite).length;
       this.categoryCount = categories.length;
       try {
         // Đọc lịch sử quiz từ `localStorage` key `coursework03_quiz_history` rồi lưu vào `this.quizHistory`.
         this.quizHistory = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
-      } catch (e) {
+      } catch (error) {
         // Nếu dữ liệu trong `localStorage` lỗi format thì trả về mảng rỗng để UI vẫn chạy.
         this.quizHistory = [];
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       this.flash('Failed to load dashboard data.', 'error');
     }
   },
   methods: {
-    percent(attempt) {
+    getScorePercent(attempt) {
       // Dùng `score` và `total` của mỗi lần quiz để đổi sang phần trăm hiển thị.
       if (!attempt.total) return 0;
       return Math.round((attempt.score / attempt.total) * 100);
     },
-    scoreClass(attempt) {
-      // Dùng kết quả từ `percent()` để chọn màu nhãn: xanh, cam hoặc đỏ.
-      const p = this.percent(attempt);
-      if (p >= 80) return 'green';
-      if (p >= 50) return 'orange';
+    getScoreClass(attempt) {
+      // Dùng kết quả từ `getScorePercent()` để chọn màu nhãn: xanh, cam hoặc đỏ.
+      const scorePercent = this.getScorePercent(attempt);
+      if (scorePercent >= 80) return 'green';
+      if (scorePercent >= 50) return 'orange';
       return 'red';
     },
     formatDateTime(isoString) {
       // Đổi chuỗi ISO lấy từ lịch sử quiz thành text ngày giờ gọn để render trong bảng.
       if (!isoString) return '—';
-      const d = new Date(isoString);
+      const date = new Date(isoString);
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const day = d.getDate(), month = months[d.getMonth()], year = d.getFullYear();
-      const h = String(d.getHours()).padStart(2, '0'), m = String(d.getMinutes()).padStart(2, '0');
-      return `${day} ${month} ${year}, ${h}:${m}`;
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${day} ${month} ${year}, ${hours}:${minutes}`;
     },
-    retakeQuiz(attempt) {
+    retakeTest(attempt) {
       // Lưu `attempt.wordIds` vào `sessionStorage` key `retake_word_ids`, rồi chuyển sang `/test` để Test.vue đọc lại và mở phiên retake.
       if (attempt.wordIds && attempt.wordIds.length) {
         sessionStorage.setItem('retake_word_ids', JSON.stringify(attempt.wordIds));

@@ -66,7 +66,7 @@ body {
   right: 20px;
   z-index: 9999;
 }
-.myFlash .flash__message {
+.myFlash .flash-message {
   padding: 12px 16px !important;
   margin-bottom: 8px !important;
   border-radius: 6px !important;
@@ -74,38 +74,38 @@ body {
   line-height: 1.4 !important;
   border: 1px solid !important;
 }
-.myFlash .flash__message.success {
+.myFlash .flash-message.success {
   color: #1a6b31 !important;
   background: #eaf7ee !important;
   border-color: #b7dfc3 !important;
 }
-.myFlash .flash__message.error {
+.myFlash .flash-message.error {
   color: #9a1a1a !important;
   background: #fdf0f0 !important;
   border-color: #f5c6c6 !important;
 }
-.myFlash .flash__message.info {
+.myFlash .flash-message.info {
   color: #1a5c8a !important;
   background: #eaf3fb !important;
   border-color: #b8d8f0 !important;
 }
-.myFlash .flash__message.warning {
+.myFlash .flash-message.warning {
   color: #7a5d00 !important;
   background: #fef9ee !important;
   border-color: #f5e2a6 !important;
 }
-.myFlash .flash__close-button {
+.myFlash .flash-close-button {
   top: 8px;
   right: 10px;
   color: inherit !important;
   opacity: 0.5;
   font-size: 0.85rem;
 }
-.myFlash .flash__close-button:hover {
+.myFlash .flash-close-button:hover {
   opacity: 0.8;
 }
 
-/* -- Shared page layout -- */
+/* Page layout */
 .workspace-page {
   padding-bottom: 2.5rem;
 }
@@ -134,16 +134,16 @@ body {
 .workspace-eyebrow .icon {
   margin-right: 0.4rem;
 }
-.workspace-header__actions {
+.workspace-header-actions {
   display: flex;
   flex: 0 0 auto;
   gap: 0.5rem;
 }
-.workspace-header__actions .ui.button {
+.workspace-header-actions .ui.button {
   margin: 0;
 }
 
-/* -- Shared panel -- */
+/* Shared panel */
 .workspace-panel {
   margin: 0 0 1.25rem !important;
   padding: 1.5rem !important;
@@ -159,7 +159,7 @@ body {
   padding-bottom: 1rem;
   border-bottom: 1px solid #e5e9f0;
 }
-.workspace-panel-heading__title {
+.workspace-panel-title {
   display: flex;
   align-items: center;
   gap: 0.75rem;

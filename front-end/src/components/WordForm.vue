@@ -4,7 +4,7 @@
       <p>{{ errorMessage }}</p>
     </div>
 
-    <div class="word-form__languages">
+    <div class="word-form-languages">
       <div class="field">
         <label>German</label>
         <div class="ui labeled input fluid">
@@ -32,13 +32,27 @@
 
     <div class="field">
       <label>Category</label>
-      <select class="ui fluid dropdown" v-model="word.category">
-        <option value="General">General</option>
-        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-      </select>
+      <div class="word-form-category-row">
+        <select class="ui fluid dropdown" v-model="word.category" :disabled="isAddingCategory">
+          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+        </select>
+        <button class="ui basic button word-form-category-button" type="button" @click="toggleCategoryInput">
+          {{ isAddingCategory ? 'Use Existing' : 'New Category' }}
+        </button>
+      </div>
     </div>
 
-    <div class="field word-form__favourite">
+    <div v-if="isAddingCategory" class="field">
+      <label>New Category</label>
+      <input
+        type="text"
+        placeholder="Enter category name..."
+        v-model.trim="newCategoryName"
+        maxlength="40"
+      />
+    </div>
+
+    <div class="field word-form-favourite">
       <div class="ui checkbox">
         <input type="checkbox" id="favourite-check" v-model="word.favourite" />
         <label for="favourite-check">
@@ -48,7 +62,7 @@
       </div>
     </div>
 
-    <div class="word-form__actions">
+    <div class="word-form-actions">
       <button class="ui primary button icon labeled" type="submit">
         <i class="save icon"></i> Save word
       </button>
@@ -57,14 +71,13 @@
 </template>
 
 <script>
-import { getCategoryNames } from '../helpers/helpers';
+import { getCategoryNames, createCategory } from '../helpers/helpers';
 
 export default {
   name: 'WordForm',
   props: {
     word: {
       type: Object,
-      // Nếu là trang tạo mới thì dùng giá trị mặc định; nếu là trang sửa thì nhận dữ liệu từ view cha.
       default: () => ({
         german: '',
         english: '',
@@ -76,80 +89,136 @@ export default {
   },
   data() {
     return {
-      categories: [], // Danh sách category.
-      errorMessage: '' // Lỗi của form.
+      categories: [],
+      errorMessage: '',
+      isAddingCategory: false,
+      newCategoryName: ''
     };
   },
   async mounted() {
     try {
-      // Gọi `getCategoryNames()` để lấy category từ backend, bỏ `General` bị trùng và lưu phần còn lại vào `this.categories`.
-      const names = await getCategoryNames();
-      this.categories = names
-        .filter(name => name.toLowerCase() !== 'general')
-        .sort((a, b) => a.localeCompare(b));
-    } catch (err) {
-      console.error(err);
+      this.categories = await getCategoryNames();
+      const currentCategory = (this.word.category || 'General').trim() || 'General';
+      if (!this.categories.includes(currentCategory)) {
+        this.isAddingCategory = true;
+        this.newCategoryName = currentCategory;
+      }
+    } catch (error) {
+      console.error(error);
     }
   },
   methods: {
-    onSubmit() {
-      // Kiểm tra 3 ô ngôn ngữ đã có dữ liệu chưa; nếu thiếu thì lưu lỗi vào `errorMessage` để hiện ngay trên form.
-      if (
-        !this.word.german ||
-        !this.word.english ||
-        !this.word.french
-      ) {
+    toggleCategoryInput() {
+      this.isAddingCategory = !this.isAddingCategory;
+      this.errorMessage = '';
+
+      if (!this.isAddingCategory) {
+        this.newCategoryName = '';
+      }
+    },
+    async onSubmit() {
+      if (!this.word.german || !this.word.english || !this.word.french) {
         this.errorMessage = 'Please fill in all required fields.';
         return;
       }
 
-      // Xóa lỗi cũ rồi phát `createOrUpdate` lên component cha; view cha sẽ quyết định gọi API tạo mới hay cập nhật.
-      this.errorMessage = '';
-      this.$emit('createOrUpdate', { ...this.word });
+      try {
+        let category = this.word.category || 'General';
+
+        if (this.isAddingCategory) {
+          category = this.newCategoryName.trim();
+
+          if (!category) {
+            this.errorMessage = 'Please enter a category name.';
+            return;
+          }
+
+          if (category.length < 2) {
+            this.errorMessage = 'Category name must be at least 2 characters.';
+            return;
+          }
+
+          if (category.length > 40) {
+            this.errorMessage = 'Category name cannot exceed 40 characters.';
+            return;
+          }
+
+          const existingCategory = this.categories.find(
+            name => name.toLowerCase() === category.toLowerCase()
+          );
+
+          if (existingCategory) {
+            category = existingCategory;
+          } else {
+            await createCategory({ name: category });
+            this.categories = await getCategoryNames();
+          }
+        }
+
+        this.errorMessage = '';
+        this.$emit('createOrUpdate', { ...this.word, category });
+      } catch (error) {
+        this.errorMessage = error?.response?.data?.message || 'Failed to save category.';
+      }
     }
   }
 };
 </script>
 
 <style scoped>
-.word-form__languages {
+.word-form-languages {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
 }
-.word-form__languages > .field {
+.word-form-languages > .field {
   min-width: 0;
   margin: 0 !important;
 }
-.word-form__favourite {
+.word-form-category-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+.word-form-category-button {
+  margin: 0 !important;
+  white-space: nowrap;
+}
+.word-form-favourite {
   margin-top: 1.25rem !important;
   padding: 1rem;
   border: 1px solid #e5e9f0;
   border-radius: 8px;
   background: #fafbfc;
 }
-.word-form__favourite label {
+.word-form-favourite label {
   display: flex !important;
   flex-direction: column;
   gap: 0.25rem;
   color: #687386 !important;
 }
-.word-form__favourite label strong {
+.word-form-favourite label strong {
   color: #30394a;
 }
-.word-form__favourite label .icon {
+.word-form-favourite label .icon {
   color: #f2c037;
 }
-.word-form__actions {
+.word-form-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid #e5e9f0;
 }
-.word-form__actions .ui.button {
+.word-form-actions .ui.button {
   min-width: 150px;
   margin: 0;
+}
+@media (max-width: 640px) {
+  .word-form-category-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

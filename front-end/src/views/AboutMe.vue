@@ -9,7 +9,7 @@
         <h1>About Me</h1>
         <p>Student information and a code-based overview of this coursework project.</p>
       </div>
-      <div class="workspace-header__actions">
+      <div class="workspace-header-actions">
         <router-link to="/dashboard" class="ui basic primary button">
           <i class="arrow left icon"></i>
           Back to Dashboard
@@ -19,7 +19,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon green" aria-hidden="true">
             <i class="user circle icon"></i>
           </span>
@@ -35,15 +35,15 @@
           <i class="graduation cap icon"></i>
         </div>
 
-        <div class="about-profile__content">
+        <div class="profile-content">
           <h3>Mạc Xuân Hòa</h3>
-          <p class="about-profile__intro">
+          <p class="profile-intro">
             Hello, my name is Mạc Xuân Hòa. I am a student at the University of Greenwich studying
             COMP1842 – Web Programming 2. I am interested in web development and enjoy creating
             applications that solve practical problems.
           </p>
 
-          <div class="ui relaxed list about-profile__list">
+          <div class="ui relaxed list profile-list">
             <div class="item">
               <i class="id card outline icon"></i>
               <div class="content">
@@ -72,7 +72,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon violet" aria-hidden="true">
             <i class="info circle icon"></i>
           </span>
@@ -99,7 +99,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon orange" aria-hidden="true">
             <i class="code icon"></i>
           </span>
@@ -120,7 +120,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon" aria-hidden="true">
             <i class="tasks icon"></i>
           </span>
@@ -149,7 +149,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon green" aria-hidden="true">
             <i class="plus square outline icon"></i>
           </span>
@@ -170,7 +170,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon violet" aria-hidden="true">
             <i class="lightbulb icon"></i>
           </span>
@@ -191,7 +191,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon orange" aria-hidden="true">
             <i class="flag checkered icon"></i>
           </span>
@@ -338,13 +338,13 @@ export default {
   font-size: 3rem;
 }
 
-.about-profile__content h3 {
+.profile-content h3 {
   margin: 0 0 0.65rem;
   font-size: 1.5rem;
   color: #172033;
 }
 
-.about-profile__intro,
+.profile-intro,
 .about-copy {
   margin: 0;
   color: #4e596d;
@@ -355,15 +355,15 @@ export default {
   margin-top: 1rem;
 }
 
-.about-profile__list {
+.profile-list {
   margin-top: 1.25rem;
 }
 
-.about-profile__list .item {
+.profile-list .item {
   padding: 0.25rem 0;
 }
 
-.about-profile__list .icon {
+.profile-list .icon {
   color: #2185d0;
 }
 

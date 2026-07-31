@@ -23,22 +23,22 @@ app.use((req, res) => {
     res.status(404).send({ url: `${req.originalUrl} not found` });
 });
 
-const initGeneralCategory = async () => {
+const ensureGeneralCategory = async () => {
     try {
         const categories = await Category.find({});
-        const general = categories.find(
-            c => c.name.trim().toLowerCase() === 'general'
+        const generalCategory = categories.find(
+            category => category.name.trim().toLowerCase() === 'general'
         );
-        if (!general) {
+        if (!generalCategory) {
             await new Category({ name: 'General' }).save();
             console.log('General category created');
         }
-    } catch (err) {
-        console.error('Error initializing General category:', err);
+    } catch (error) {
+        console.error('Error initializing General category:', error);
     }
 };
 
-initGeneralCategory();
+ensureGeneralCategory();
 
 app.listen(port);
 console.log(`Server started on port ${port}`);

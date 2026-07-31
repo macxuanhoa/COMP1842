@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page--narrow">
+  <div class="workspace-page workspace-page-narrow">
     <header class="workspace-header">
       <div>
         <div class="workspace-eyebrow">
@@ -9,7 +9,7 @@
         <h1>Add New Word</h1>
         <p>Insert a new multilingual entry into your learning dictionary.</p>
       </div>
-      <div class="workspace-header__actions">
+      <div class="workspace-header-actions">
         <router-link to="/words" class="ui basic primary button">
           <i class="arrow left icon"></i>
           Back to Library
@@ -19,7 +19,7 @@
 
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon green" aria-hidden="true">
             <i class="language icon"></i>
           </span>
@@ -46,17 +46,11 @@ export default {
   methods: {
     async createOrUpdate(word) {
       try {
-        // Nhận dữ liệu từ `WordForm`, gọi `createWord()` để lưu từ mới vào database.
         await createWord(word);
-        // Tạo xong thì hiện flash message và chuyển về trang danh sách.
         this.flash('Word created successfully!', 'success');
         this.$router.push('/words');
-      } catch (err) {
-        // Nếu backend trả về lỗi chi tiết thì lấy message đó để hiển thị cho user.
-        const message =
-          err.response && err.response.data && err.response.data.message
-            ? err.response.data.message
-            : 'Failed to create word.';
+      } catch (error) {
+        const message = error?.response?.data?.message || 'Failed to create word.';
         this.flash(message, 'error');
       }
     }

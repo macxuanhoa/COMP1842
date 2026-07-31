@@ -5,20 +5,17 @@ const WordSchema = new Schema({
   german: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 80
+    trim: true
   },
   english: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 80
+    trim: true
   },
   french: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 80
+    trim: true
   },
   category: {
     type: String,
@@ -34,13 +31,5 @@ const WordSchema = new Schema({
     default: Date.now
   }
 });
-
-WordSchema.index(
-  { german: 1, english: 1, french: 1 },
-  {
-    unique: true,
-    collation: { locale: 'en', strength: 2 }
-  }
-);
 
 module.exports = mongoose.model('Words', WordSchema);

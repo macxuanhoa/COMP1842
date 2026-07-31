@@ -33,7 +33,7 @@
             <input
               type="text"
               placeholder="Search words in English, German, or French..."
-              v-model="search"
+              v-model="searchText"
             />
             <i class="search icon"></i>
           </div>
@@ -42,15 +42,15 @@
         <div class="library-filter-grid">
           <div class="field">
             <label>Category</label>
-            <select class="ui dropdown fluid" v-model="categoryFilter">
+            <select class="ui dropdown fluid" v-model="selectedCategory">
               <option value="">All Categories</option>
-              <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+              <option v-for="categoryName in categories" :key="categoryName" :value="categoryName">{{ categoryName }}</option>
             </select>
           </div>
 
           <div class="field">
             <label>Favourite Status</label>
-            <select class="ui dropdown fluid" v-model="favouriteFilter">
+            <select class="ui dropdown fluid" v-model="selectedFavouriteFilter">
               <option value="all">All Words</option>
               <option value="fav">Favourites Only</option>
               <option value="normal">Non-favourites</option>
@@ -58,7 +58,7 @@
           </div>
           <div class="field">
             <label>Sort By</label>
-            <select class="ui dropdown fluid" v-model="sortBy">
+            <select class="ui dropdown fluid" v-model="selectedSortOrder">
               <option value="newest">Newest Added</option>
               <option value="oldest">Oldest Added</option>
             </select>
@@ -68,28 +68,28 @@
     </section>
 
     <section class="ui segment library-panel">
-      <div class="library-panel-heading library-panel-heading--table">
+      <div class="library-panel-heading library-panel-heading-table">
         <div>
           <h2>Vocabulary entries</h2>
           <p>
-            {{ filteredWords.length }}
-            {{ filteredWords.length === 1 ? 'word' : 'words' }} in this view
+            {{ visibleWords.length }}
+            {{ visibleWords.length === 1 ? 'word' : 'words' }} in this view
           </p>
         </div>
-        <span class="library-panel-icon library-panel-icon--blue" aria-hidden="true">
+        <span class="library-panel-icon library-panel-icon-blue" aria-hidden="true">
           <i class="list ul icon"></i>
         </span>
       </div>
 
       <div>
-        <div v-if="filteredWords.length === 0" class="library-empty-state">
-          <div class="library-empty-state__icon">
+        <div v-if="visibleWords.length === 0" class="library-empty-state">
+          <div class="library-empty-icon">
             <i class="search icon"></i>
           </div>
-          <div class="library-empty-state__text">
+          <div class="library-empty-text">
             No vocabulary entries match your criteria.
           </div>
-          <router-link to="/words/new" class="ui positive button icon labeled library-empty-state__button">
+          <router-link to="/words/new" class="ui positive button icon labeled library-empty-button">
             <i class="plus icon"></i>
             Add New Word
           </router-link>
@@ -116,11 +116,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="word in filteredWords" :key="word._id">
+              <tr v-for="word in visibleWords" :key="word._id">
                 <td
                   class="center aligned favourite-cell"
                   title="Toggle favourite"
-                  @click="onToggleFavourite(word)"
+                  @click="toggleFavourite(word)"
                 >
                   <i :class="[word.favourite ? 'star icon yellow' : 'star outline icon grey']"></i>
                 </td>
@@ -165,7 +165,7 @@
                       class="ui icon mini basic negative button"
                       aria-label="Delete word"
                       title="Delete word"
-                      @click="onDelete(word)"
+                      @click="deleteWordItem(word)"
                     >
                       <i class="trash icon"></i>
                     </button>
@@ -189,47 +189,47 @@ export default {
     return {
       words: [], // Danh sách từ.
       categories: ['General'], // Danh sách category.
-      search: '', // Từ khóa tìm.
-      categoryFilter: '', // Category đang lọc.
-      favouriteFilter: 'all', // Trạng thái favourite.
-      sortBy: 'newest' // Kiểu sắp xếp.
+      searchText: '', // Từ khóa tìm.
+      selectedCategory: '', // Category đang lọc.
+      selectedFavouriteFilter: 'all', // Trạng thái favourite.
+      selectedSortOrder: 'newest' // Kiểu sắp xếp.
     };
   },
   computed: {
-    filteredWords() {
+    visibleWords() {
       // Clone từ `this.words` trước để filter/sort mà không đụng trực tiếp mảng gốc.
-      let result = [...this.words];
+      let visibleWords = [...this.words];
 
-      // Dùng `search` để lọc theo 3 cột German, English, French rồi trả ra danh sách đang nhìn thấy trên bảng.
-      const lowerSearch = this.search.trim().toLowerCase();
-      if (lowerSearch) {
-        result = result.filter(word =>
-          word.german.toLowerCase().includes(lowerSearch) ||
-          word.english.toLowerCase().includes(lowerSearch) ||
-          word.french.toLowerCase().includes(lowerSearch)
+      // Dùng `searchText` để lọc theo 3 cột German, English, French rồi trả ra danh sách đang nhìn thấy trên bảng.
+      const searchValue = this.searchText.trim().toLowerCase();
+      if (searchValue) {
+        visibleWords = visibleWords.filter(word =>
+          word.german.toLowerCase().includes(searchValue) ||
+          word.english.toLowerCase().includes(searchValue) ||
+          word.french.toLowerCase().includes(searchValue)
         );
       }
 
-      // Dùng `categoryFilter` để chỉ giữ lại các từ thuộc category đang chọn.
-      if (this.categoryFilter) {
-        result = result.filter(word => word.category === this.categoryFilter);
+      // Dùng `selectedCategory` để chỉ giữ lại các từ thuộc category đang chọn.
+      if (this.selectedCategory) {
+        visibleWords = visibleWords.filter(word => word.category === this.selectedCategory);
       }
 
-      // Dùng `favouriteFilter` để tách danh sách favourite hoặc non-favourite.
-      if (this.favouriteFilter === 'fav') {
-        result = result.filter(word => word.favourite);
-      } else if (this.favouriteFilter === 'normal') {
-        result = result.filter(word => !word.favourite);
+      // Dùng `selectedFavouriteFilter` để tách danh sách favourite hoặc non-favourite.
+      if (this.selectedFavouriteFilter === 'fav') {
+        visibleWords = visibleWords.filter(word => word.favourite);
+      } else if (this.selectedFavouriteFilter === 'normal') {
+        visibleWords = visibleWords.filter(word => !word.favourite);
       }
 
-      // Dùng `sortBy` để sắp xếp theo `created_date`, rồi trả kết quả cuối cho template render.
-      if (this.sortBy === 'newest') {
-        result.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      // Dùng `selectedSortOrder` để sắp xếp theo `created_date`, rồi trả kết quả cuối cho template render.
+      if (this.selectedSortOrder === 'newest') {
+        visibleWords.sort((firstWord, secondWord) => new Date(secondWord.created_date) - new Date(firstWord.created_date));
       } else {
-        result.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+        visibleWords.sort((firstWord, secondWord) => new Date(firstWord.created_date) - new Date(secondWord.created_date));
       }
 
-      return result;
+      return visibleWords;
     }
   },
   async mounted() {
@@ -242,37 +242,33 @@ export default {
       try {
         // Gọi `getWords()` để lấy toàn bộ từ từ backend rồi lưu vào `this.words` cho bảng, search và filter cùng dùng.
         this.words = await getWords();
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error(error);
       }
     },
     async loadCategories() {
       try {
-        // Gọi `getCategoryNames()` để lấy tên category từ backend, sau đó sắp xếp và lưu vào `this.categories` cho dropdown filter.
-        const categoryNames = await getCategoryNames();
-        this.categories = categoryNames.sort((a, b) =>
-          a.toLowerCase().localeCompare(b.toLowerCase())
-        );
-      } catch (e) {
-        console.error(e);
+        this.categories = await getCategoryNames();
+      } catch (error) {
+        console.error(error);
       }
     },
-    async onToggleFavourite(word) {
+    async toggleFavourite(word) {
       // Đảo `word.favourite`, gửi bản mới qua `updateWord()`, rồi ghi kết quả trả về vào đúng phần tử trong `this.words`.
-      const newFav = !word.favourite;
+      const nextFavouriteValue = !word.favourite;
       try {
-        const updatedWord = await updateWord({ ...word, favourite: newFav });
-        const index = this.words.findIndex(w => w._id === word._id);
-        if (index !== -1) {
-          this.words.splice(index, 1, updatedWord);
+        const updatedWord = await updateWord({ ...word, favourite: nextFavouriteValue });
+        const wordIndex = this.words.findIndex(savedWord => savedWord._id === word._id);
+        if (wordIndex !== -1) {
+          this.words.splice(wordIndex, 1, updatedWord);
         }
-        this.flash(newFav ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
-      } catch (e) {
-        console.error(e);
+        this.flash(nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
+      } catch (error) {
+        console.error(error);
         this.flash('Failed to update favourite status.', 'error');
       }
     },
-    async onDelete(word) {
+    async deleteWordItem(word) {
       // Hỏi lại bằng `window.confirm()` trước khi xóa vì thao tác này sẽ xóa dữ liệu khỏi backend.
       if (!window.confirm('Are you sure you want to delete this word?')) {
         return;
@@ -281,9 +277,9 @@ export default {
         // Gọi `deleteWord()` để xóa trong database, rồi lọc lại `this.words` để bảng cập nhật ngay trên UI.
         await deleteWord(word._id);
         this.flash('Word deleted successfully!', 'success');
-        this.words = this.words.filter(w => w._id !== word._id);
-      } catch (e) {
-        console.error(e);
+        this.words = this.words.filter(savedWord => savedWord._id !== word._id);
+      } catch (error) {
+        console.error(error);
         this.flash('Failed to delete the word.', 'error');
       }
     }
@@ -371,7 +367,7 @@ export default {
   display: block;
   line-height: 1;
 }
-.library-panel-icon--blue {
+.library-panel-icon-blue {
   color: #2185d0;
   background: #eaf5fc;
 }
@@ -438,25 +434,25 @@ export default {
   justify-content: center;
   gap: 1.25rem;
 }
-.library-empty-state__icon {
+.library-empty-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   color: #9aa3b3;
 }
-.library-empty-state__icon .icon {
+.library-empty-icon .icon {
   margin: 0 !important;
   font-size: 2.75rem;
   line-height: 1;
 }
-.library-empty-state__text {
+.library-empty-text {
   font-size: 1.05rem;
   font-weight: 600;
   color: #3c4557;
   max-width: 420px;
   line-height: 1.5;
 }
-.library-empty-state__button {
+.library-empty-button {
   margin: 0.25rem 0 0 0 !important;
   padding: 0.85rem 1.6rem !important;
   font-size: 0.95rem;

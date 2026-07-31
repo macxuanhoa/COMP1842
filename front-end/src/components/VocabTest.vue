@@ -1,8 +1,8 @@
 <template>
   <div class="learning-session">
-    <section class="ui segment workspace-panel learning-session__panel">
+    <section class="ui segment workspace-panel session-panel">
       <div class="workspace-panel-heading">
-        <div class="workspace-panel-heading__title">
+        <div class="workspace-panel-title">
           <span class="workspace-panel-icon green" aria-hidden="true">
             <i class="graduation cap icon"></i>
           </span>
@@ -31,22 +31,22 @@
         <div class="bar" :style="{ width: progressPercent + '%' }"></div>
       </div>
 
-      <form v-if="!testOver" action="#" class="ui form quiz-form" @submit.prevent="onSubmit">
+      <form v-if="!testOver" action="#" class="ui form quiz-form" @submit.prevent="submitAnswer">
         <div class="field">
-          <label>Translate from {{ qLangName }}</label>
+          <label>Translate from {{ questionLanguageName }}</label>
           <div class="ui labeled input fluid">
             <div class="ui label">
-              <i :class="qLangFlag"></i> {{ qLangCode }}
+              <i :class="questionLanguageFlag"></i> {{ questionLanguageCode }}
             </div>
-            <input type="text" readonly :value="currWord[qLang]" />
+            <input type="text" readonly :value="currentWord[questionLanguage]" />
           </div>
         </div>
 
         <div class="field">
-          <label>Your translation in {{ aLangName }}</label>
+          <label>Your translation in {{ answerLanguageName }}</label>
           <div class="ui labeled input fluid">
             <div class="ui label">
-              <i :class="aLangFlag"></i> {{ aLangCode }}
+              <i :class="answerLanguageFlag"></i> {{ answerLanguageCode }}
             </div>
             <input
               type="text"
@@ -89,7 +89,7 @@
       </form>
 
       <div v-else class="quiz-complete">
-        <span class="quiz-complete__icon">
+        <span class="quiz-complete-icon">
           <i class="trophy icon"></i>
         </span>
         <h3>Quiz Completed!</h3>
@@ -97,7 +97,7 @@
 
         <div v-if="wrongAnswers.length > 0" class="quiz-review">
           <h4><i class="attention icon"></i> Needs review</h4>
-          <div class="quiz-review__table">
+          <div class="quiz-review-table">
             <table class="ui celled compact table">
               <thead>
                 <tr>
@@ -107,10 +107,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in wrongAnswers" :key="idx">
-                  <td><strong>{{ item.word[qLang] }}</strong></td>
-                  <td><span class="quiz-review__guess">{{ item.guess || '(blank)' }}</span></td>
-                  <td><span class="ui green text">{{ item.word[aLang] }}</span></td>
+                <tr v-for="(item, index) in wrongAnswers" :key="index">
+                  <td><strong>{{ item.word[questionLanguage] }}</strong></td>
+                  <td><span class="quiz-review-guess">{{ item.guess || '(blank)' }}</span></td>
+                  <td><span class="ui green text">{{ item.word[answerLanguage] }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -134,28 +134,28 @@ export default {
       type: Array,
       required: true
     },
-    qLang: {
+    questionLanguage: {
       type: String,
       default: 'german'
     },
-    aLang: {
+    answerLanguage: {
       type: String,
       default: 'english'
     }
   },
   data() {
     return {
-      randWords: [...this.words].sort(() => 0.5 - Math.random()), // Danh sách câu hỏi.
-      wrongAnswers: [], // Danh sách câu sai.
-      userAnswer: '', // Câu trả lời hiện tại.
-      score: 0, // Điểm hiện tại.
-      answeredCount: 0, // Số câu đã làm.
-      totalQuestions: this.words.length, // Tổng số câu.
-      testOver: false, // Trạng thái kết thúc.
-      feedback: null, // Kết quả câu vừa nộp.
-      lastCorrectAnswer: '', // Đáp án đúng gần nhất.
-      waitingNext: false, // Trạng thái chờ sang câu.
-      langInfo: {
+      randomizedWords: [...this.words].sort(() => 0.5 - Math.random()),
+      wrongAnswers: [],
+      userAnswer: '',
+      score: 0,
+      answeredCount: 0,
+      totalQuestions: this.words.length,
+      testOver: false,
+      feedback: null,
+      lastCorrectAnswer: '',
+      waitingNext: false,
+      languageDetails: {
         german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
         english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
         french:  { name: 'French',  code: 'FR', flag: 'france flag' }
@@ -163,93 +163,79 @@ export default {
     };
   },
   computed: {
-    currWord() {
-      // Lấy phần tử đầu của `randWords` làm câu hỏi hiện tại.
-      return this.randWords.length ? this.randWords[0] : null;
+    currentWord() {
+      return this.randomizedWords.length ? this.randomizedWords[0] : null;
     },
     progressPercent() {
-      // Dùng `answeredCount` và `totalQuestions` để tính phần trăm tiến độ cho thanh progress.
       return Math.round((this.answeredCount / this.totalQuestions) * 100) || 0;
     },
     scorePercent() {
-      // Dùng `score` và `totalQuestions` để tính phần trăm điểm cuối bài.
       return Math.round((this.score / this.totalQuestions) * 100) || 0;
     },
     feedbackClass() {
-      // Đổi class Semantic UI theo `feedback` để message hiện đúng màu.
       return this.feedback === 'correct' ? 'positive' : 'negative';
     },
     feedbackIcon() {
       return this.feedback === 'correct' ? 'check circle icon' : 'times circle icon';
     },
-    qLangName() { return this.langInfo[this.qLang].name; },
-    aLangName() { return this.langInfo[this.aLang].name; },
-    qLangCode() { return this.langInfo[this.qLang].code; },
-    aLangCode() { return this.langInfo[this.aLang].code; },
-    qLangFlag() { return this.langInfo[this.qLang].flag; },
-    aLangFlag() { return this.langInfo[this.aLang].flag; }
+    questionLanguageName() { return this.languageDetails[this.questionLanguage].name; },
+    answerLanguageName() { return this.languageDetails[this.answerLanguage].name; },
+    questionLanguageCode() { return this.languageDetails[this.questionLanguage].code; },
+    answerLanguageCode() { return this.languageDetails[this.answerLanguage].code; },
+    questionLanguageFlag() { return this.languageDetails[this.questionLanguage].flag; },
+    answerLanguageFlag() { return this.languageDetails[this.answerLanguage].flag; }
   },
   mounted() {
     this.$nextTick(() => {
-      // Sau khi render xong, focus vào ô trả lời để user gõ ngay.
       if (this.$refs.answerInput) {
         this.$refs.answerInput.focus();
       }
     });
   },
   methods: {
-    onSubmit() {
-      // Lấy đáp án đúng từ `currWord[aLang]`, chuẩn hóa cùng `userAnswer`, rồi so sánh để chấm câu hiện tại.
-      const correctVal = this.currWord[this.aLang].trim().toLowerCase();
+    submitAnswer() {
+      const correctVal = this.currentWord[this.answerLanguage].trim().toLowerCase();
       const userVal = this.userAnswer.trim().toLowerCase();
 
       const isCorrect = correctVal === userVal;
-      this.lastCorrectAnswer = this.currWord[this.aLang];
+      this.lastCorrectAnswer = this.currentWord[this.answerLanguage];
 
       if (isCorrect) {
-        // Nếu đúng thì tăng `score` và lưu `feedback` để UI hiện trạng thái đúng.
         this.feedback = 'correct';
         this.score += 1;
       } else {
-        // Nếu sai thì đẩy dữ liệu vào `wrongAnswers` để cuối bài render bảng cần ôn lại.
         this.feedback = 'wrong';
         this.wrongAnswers.push({
-          word: this.currWord,
+          word: this.currentWord,
           guess: this.userAnswer
         });
       }
 
-      // Bật `waitingNext` để khóa ô nhập và chuyển nút sang "Next Question".
       this.waitingNext = true;
     },
     saveResult() {
-      // Đọc lịch sử cũ từ `localStorage`, thêm kết quả mới vào đầu mảng rồi lưu lại vào key `coursework03_quiz_history`.
       const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
       history.unshift({
         score: this.score,
         total: this.totalQuestions,
         timestamp: new Date().toISOString(),
-        wordIds: this.words.map(w => w._id)
+        wordIds: this.words.map(word => word._id)
       });
-      // Chỉ giữ tối đa 50 lần để `localStorage` không phình quá lớn.
       if (history.length > 50) history.pop();
       localStorage.setItem('coursework03_quiz_history', JSON.stringify(history));
     },
     nextQuestion() {
-      // Tăng số câu đã làm, xóa trạng thái tạm của câu cũ và bỏ phần tử đầu trong `randWords` để sang câu tiếp theo.
       this.answeredCount += 1;
       this.feedback = null;
       this.waitingNext = false;
       this.userAnswer = '';
-      this.randWords.shift();
+      this.randomizedWords.shift();
 
-      if (this.randWords.length === 0) {
-        // Nếu hết câu thì bật `testOver` và gọi `saveResult()` để lưu kết quả vào `localStorage`.
+      if (this.randomizedWords.length === 0) {
         this.testOver = true;
         this.saveResult();
       } else {
         this.$nextTick(() => {
-          // Nếu còn câu tiếp theo thì focus lại ô nhập.
           if (this.$refs.answerInput) {
             this.$refs.answerInput.focus();
           }
@@ -261,7 +247,7 @@ export default {
 </script>
 
 <style scoped>
-.learning-session__panel {
+.session-panel {
   margin: 0 !important;
 }
 .workspace-panel-heading .ui.button {
@@ -344,7 +330,7 @@ export default {
   padding: 1rem 0 0;
   text-align: center;
 }
-.quiz-complete__icon {
+.quiz-complete-icon {
   display: inline-flex;
   width: 54px;
   height: 54px;
@@ -380,15 +366,15 @@ export default {
   margin: 0 0 0.8rem;
   color: #9f3a38;
 }
-.quiz-review__table {
+.quiz-review-table {
   width: 100%;
   overflow: visible;
 }
-.quiz-review__table .ui.table {
+.quiz-review-table .ui.table {
   width: 100%;
   margin: 0;
 }
-.quiz-review__guess {
+.quiz-review-guess {
   text-decoration: line-through;
 }
 .quiz-perfect {
