@@ -2,10 +2,7 @@
   <div class="workspace-page workspace-page-narrow">
     <header class="workspace-header">
       <div>
-        <div class="workspace-eyebrow">
-          <i class="eye icon"></i>
-          Vocabulary entry
-        </div>
+        <div class="workspace-eyebrow"><i class="eye icon"></i> Vocabulary entry</div>
         <h1>Word Details</h1>
         <p>Review translations, category, and favourite status.</p>
       </div>
@@ -48,47 +45,56 @@
 
       <div class="ui form word-detail-languages">
         <div class="field">
-          <label>
-            German
-            <button type="button" class="ui mini basic icon button speak-btn" @click="speakWord(word.german, 'de-DE')" title="Listen">
-              <i class="volume up icon"></i>
-            </button>
-          </label>
-          <div class="ui labeled input fluid">
+          <label>German</label>
+          <div class="ui action labeled input fluid">
             <div class="ui label">
               <i class="germany flag"></i> DE
             </div>
             <input type="text" readonly :value="word.german" />
+            <button
+              type="button"
+              class="ui basic button listen-action-btn"
+              @click="speakWord(word.german, 'de-DE')"
+              title="Listen German pronunciation"
+            >
+              <i class="volume up icon"></i> Listen
+            </button>
           </div>
         </div>
 
         <div class="field">
-          <label>
-            English
-            <button type="button" class="ui mini basic icon button speak-btn" @click="speakWord(word.english, 'en-US')" title="Listen">
-              <i class="volume up icon"></i>
-            </button>
-          </label>
-          <div class="ui labeled input fluid">
+          <label>English</label>
+          <div class="ui action labeled input fluid">
             <div class="ui label">
               <i class="united kingdom flag"></i> EN
             </div>
             <input type="text" readonly :value="word.english" />
+            <button
+              type="button"
+              class="ui basic button listen-action-btn"
+              @click="speakWord(word.english, 'en-US')"
+              title="Listen English pronunciation"
+            >
+              <i class="volume up icon"></i> Listen
+            </button>
           </div>
         </div>
 
         <div class="field">
-          <label>
-            French
-            <button type="button" class="ui mini basic icon button speak-btn" @click="speakWord(word.french, 'fr-FR')" title="Listen">
-              <i class="volume up icon"></i>
-            </button>
-          </label>
-          <div class="ui labeled input fluid">
+          <label>French</label>
+          <div class="ui action labeled input fluid">
             <div class="ui label">
               <i class="france flag"></i> FR
             </div>
             <input type="text" readonly :value="word.french" />
+            <button
+              type="button"
+              class="ui basic button listen-action-btn"
+              @click="speakWord(word.french, 'fr-FR')"
+              title="Listen French pronunciation"
+            >
+              <i class="volume up icon"></i> Listen
+            </button>
           </div>
         </div>
       </div>
@@ -234,13 +240,28 @@ export default {
   align-items: center;
   gap: 0.4rem;
 }
-.speak-btn {
-  padding: 0.25rem 0.4rem !important;
-  margin: 0 !important;
-}
 .word-detail-languages input[readonly] {
-  color: #172033 !important;
-  background: #fafbfc !important;
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+.listen-action-btn {
+  flex: 0 0 auto !important;
+  background: #f8fafc !important;
+  color: #0284c7 !important;
+  border-color: #cbd5e1 !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  font-weight: 600 !important;
+  padding: 0.6rem 0.95rem !important;
+  transition: all 0.15s ease !important;
+}
+.listen-action-btn:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+.listen-action-btn .icon {
+  margin: 0 0.3rem 0 0 !important;
 }
 .word-detail-actions {
   display: flex;

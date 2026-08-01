@@ -2,10 +2,7 @@
   <div class="workspace-page workspace-page-narrow">
     <header class="workspace-header">
       <div>
-        <div class="workspace-eyebrow">
-          <i class="edit icon"></i>
-          Update vocabulary
-        </div>
+        <div class="workspace-eyebrow"><i class="edit icon"></i> Update vocabulary</div>
         <h1>Edit Word</h1>
         <p>Update translations, category, and favourite status.</p>
       </div>
@@ -25,9 +22,6 @@
     <section v-else class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon orange" aria-hidden="true">
-            <i class="language icon"></i>
-          </span>
           <div>
             <h2>Word information</h2>
             <p>Review the current values before saving your changes.</p>

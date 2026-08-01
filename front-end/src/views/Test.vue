@@ -148,11 +148,18 @@ export default {
       return this.words.filter(word => word.favourite).length;
     },
     availableWords() {
-      // Dùng `selectedWordSet` và `selectedCategory` để tạo ra đúng bộ từ sẽ đem đi test.
-      if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite);
-      if (this.selectedWordSet === 'category' && this.selectedCategory) {
-        return this.words.filter(word => word.category === this.selectedCategory);
+      if (this.selectedWordSet === 'fav') {
+        return this.words.filter(word => word.favourite);
       }
+
+      if (this.selectedWordSet === 'category') {
+        if (!this.selectedCategory) return [];
+
+        return this.words.filter(
+          word => word.category === this.selectedCategory
+        );
+      }
+
       return this.words;
     },
     availableWordCount() {

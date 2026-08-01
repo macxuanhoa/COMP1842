@@ -1,11 +1,8 @@
 <template>
-  <div>
+  <div class="workspace-page dashboard-page">
     <header class="workspace-header">
       <div>
-        <div class="workspace-eyebrow">
-          <i class="chart bar icon"></i>
-          Learning overview
-        </div>
+        <div class="workspace-eyebrow"><i class="chart bar icon"></i> Learning overview</div>
         <h1>Dashboard</h1>
         <p>Overview of your vocabulary collection and quiz performance.</p>
       </div>
@@ -17,50 +14,60 @@
       </div>
     </header>
 
-    <div>
-      <div class="ui three cards">
-        <div class="ui card">
-          <div class="content">
-            <div class="header">{{ totalWords }}</div>
-            <div class="meta">Total Words</div>
+    <!-- Stat row -->
+    <div class="stat-row">
+      <div class="stat-item">
+        <span class="stat-value">{{ totalWords }}</span>
+        <span class="stat-label">Total words</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value">{{ favouriteCount }}</span>
+        <span class="stat-label">Favourites</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value">{{ categoryCount }}</span>
+        <span class="stat-label">Categories</span>
+      </div>
+    </div>
+
+    <!-- Recent quiz history -->
+    <section class="ui segment workspace-panel">
+      <div class="workspace-panel-heading">
+        <div class="workspace-panel-title">
+          <div>
+            <h2>Recent quiz attempts</h2>
+            <p v-if="quizHistory.length">
+              Average of last {{ Math.min(quizHistory.length, 5) }} sessions:
+              <strong :class="recentAverage >= 80 ? 'score-good' : recentAverage >= 50 ? 'score-mid' : 'score-low'">{{ recentAverage }}%</strong>
+            </p>
+            <p v-else>No attempts yet.</p>
           </div>
         </div>
-        <div class="ui card">
-          <div class="content">
-            <div class="header">{{ favouriteCount }}</div>
-            <div class="meta">Favourites</div>
-          </div>
-        </div>
-        <div class="ui card">
-          <div class="content">
-            <div class="header">{{ categoryCount }}</div>
-            <div class="meta">Categories</div>
-          </div>
-        </div>
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="history icon"></i>
+        </span>
       </div>
 
-      <h3 class="ui dividing header">Recent Quiz Attempts</h3>
-      <p v-if="quizHistory.length" style="color: #687386; margin-bottom: 0.75rem;">
-        Average of last {{ Math.min(quizHistory.length, 5) }}: <strong style="color: #2185d0;">{{ recentAverage }}%</strong>
-      </p>
-
-      <div v-if="quizHistory.length === 0" class="ui message">
+      <div v-if="quizHistory.length === 0" class="history-empty">
         No quiz attempts yet. <router-link to="/test">Take your first quiz.</router-link>
       </div>
-      <table v-else class="ui celled compact table">
+
+      <table v-else class="ui very basic compact table history-table">
         <thead>
           <tr>
-            <th>Date &amp; time</th>
-            <th class="center aligned">Score</th>
-            <th class="center aligned">Result</th>
-            <th class="right aligned">Action</th>
+            <th><i class="calendar alternate outline icon"></i> Date &amp; time</th>
+            <th class="center aligned"><i class="check square outline icon"></i> Score</th>
+            <th class="center aligned"><i class="chart line icon"></i> Result</th>
+            <th class="right aligned"><i class="cog icon"></i> Action</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(attempt, idx) in quizHistory.slice(0, 5)" :key="idx">
             <td>{{ formatDateTime(attempt.timestamp) }}</td>
             <td class="center aligned">
-              <strong>{{ attempt.score }}</strong> / {{ attempt.total }}
+              {{ attempt.score }} / {{ attempt.total }}
             </td>
             <td class="center aligned">
               <span class="ui label" :class="getScoreClass(attempt)">{{ getScorePercent(attempt) }}%</span>
@@ -73,12 +80,12 @@
               >
                 <i class="redo icon"></i> Retake
               </button>
-              <span v-else>—</span>
+              <span v-else class="muted">—</span>
             </td>
           </tr>
         </tbody>
       </table>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -89,10 +96,10 @@ export default {
   name: 'dashboard',
   data() {
     return {
-      totalWords: 0, // Tổng số từ.
-      favouriteCount: 0, // Số từ favourite.
-      categoryCount: 0, // Số category.
-      quizHistory: [] // Lịch sử quiz.
+      totalWords: 0,
+      favouriteCount: 0,
+      categoryCount: 0,
+      quizHistory: []
     };
   },
   computed: {
@@ -132,9 +139,9 @@ export default {
     },
     getScoreClass(attempt) {
       // Dùng kết quả từ `getScorePercent()` để chọn màu nhãn: xanh, cam hoặc đỏ.
-      const scorePercent = this.getScorePercent(attempt);
-      if (scorePercent >= 80) return 'green';
-      if (scorePercent >= 50) return 'orange';
+      const pct = this.getScorePercent(attempt);
+      if (pct >= 80) return 'green';
+      if (pct >= 50) return 'orange';
       return 'red';
     },
     formatDateTime(isoString) {
@@ -142,12 +149,7 @@ export default {
       if (!isoString) return '—';
       const date = new Date(isoString);
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const day = date.getDate();
-      const month = months[date.getMonth()];
-      const year = date.getFullYear();
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${day} ${month} ${year}, ${hours}:${minutes}`;
+      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
     },
     retakeTest(attempt) {
       // Lưu `attempt.wordIds` vào `sessionStorage` key `retake_word_ids`, rồi chuyển sang `/test` để Test.vue đọc lại và mở phiên retake.
@@ -159,3 +161,69 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* Stat row */
+.stat-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  margin-bottom: 1.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.35rem 1.6rem;
+}
+.stat-divider {
+  width: 1px;
+  background: #e2e8f0;
+  flex: 0 0 1px;
+}
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* History table */
+.history-empty {
+  color: #64748b;
+  font-size: 0.88rem;
+  padding: 0.5rem 0;
+}
+.history-table thead th {
+  color: #64748b !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  padding-bottom: 0.7rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.history-table tbody td {
+  vertical-align: middle !important;
+  color: #1e293b;
+  font-size: 0.88rem;
+}
+.muted { color: #94a3b8; }
+.score-good { color: #16a34a; font-weight: 700; }
+.score-mid  { color: #ea580c; font-weight: 700; }
+.score-low  { color: #dc2626; font-weight: 700; }
+</style>

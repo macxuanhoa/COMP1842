@@ -3,9 +3,6 @@
     <section class="ui segment workspace-panel session-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon green" aria-hidden="true">
-            <i class="graduation cap icon"></i>
-          </span>
           <div>
             <h2>Vocabulary Quiz</h2>
             <p>Test your language translation skills.</p>
@@ -23,7 +20,7 @@
           {{ answeredCount + 1 > totalQuestions ? totalQuestions : answeredCount + 1 }} of {{ totalQuestions }}
         </span>
         <span>
-          <strong>Score</strong>
+          <strong>Current Score</strong>
           <span class="ui green text">{{ score }}</span> / {{ totalQuestions }}
         </span>
       </div>
@@ -120,7 +117,9 @@
           <i class="thumbs up outline icon"></i> Perfect score! Outstanding job!
         </div>
 
-        <button class="ui primary button" @click="$emit('exitTest')">Back to Setup</button>
+        <button class="ui primary button icon labeled" @click="$emit('exitTest')">
+          <i class="arrow left icon"></i> Back to Setup
+        </button>
       </div>
     </section>
   </div>
@@ -145,7 +144,9 @@ export default {
   },
   data() {
     return {
-      randomizedWords: [...this.words].sort(() => 0.5 - Math.random()),
+      randomizedWords: [...this.words].sort(
+        () => 0.5 - Math.random()
+      ),
       wrongAnswers: [],
       userAnswer: '',
       score: 0,
@@ -250,40 +251,39 @@ export default {
 .session-panel {
   margin: 0 !important;
 }
-.workspace-panel-heading .ui.button {
-  flex: 0 0 auto;
-  margin: 0;
-}
 .learning-progress-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
-  color: #687386;
-  font-size: 0.95rem;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 .learning-progress-meta > span {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid #e5e9f0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: #fafbfc;
+  background: #f8fafc;
 }
 .learning-progress-meta strong {
-  color: #30394a;
+  color: #0f172a;
 }
 .learning-progress {
-  height: 7px !important;
-  margin: 0 0 1.25rem !important;
+  height: 8px !important;
+  margin: 0 0 1.5rem !important;
   border-radius: 999px;
-  background: #edf0f5 !important;
+  background: #e2e8f0 !important;
+  overflow: hidden;
 }
 .learning-progress .bar {
   min-width: 0 !important;
   border-radius: inherit;
+  background-color: #2185d0 !important;
+  transition: width 0.3s ease !important;
 }
 .quiz-form {
   display: grid;
@@ -292,24 +292,18 @@ export default {
 .quiz-form .field {
   margin: 0 !important;
 }
-.quiz-form .field > label {
-  margin-bottom: 0.6rem;
-  color: #30394a;
-}
 .quiz-form input[readonly] {
-  color: #172033 !important;
-  background: #fafbfc !important;
+  color: #0f172a !important;
+  background: #f8fafc !important;
   font-weight: 700;
-}
-.quiz-form input:disabled {
-  opacity: 0.7;
+  font-size: 1.05rem;
 }
 .quiz-feedback {
   display: block !important;
   margin: 0 !important;
-  padding: 0.85rem 1rem !important;
+  padding: 0.9rem 1.1rem !important;
   border-radius: 8px !important;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 .quiz-feedback .icon {
   margin-right: 0.5rem;
@@ -321,61 +315,60 @@ export default {
   font-weight: 700;
 }
 .quiz-next-btn.positive {
-  background-color: #21ba45 !important;
+  background-color: #10b981 !important;
 }
 .quiz-next-btn.negative {
-  background-color: #db2828 !important;
+  background-color: #ef4444 !important;
 }
 .quiz-complete {
-  padding: 1rem 0 0;
+  padding: 1.5rem 0 0.5rem;
   text-align: center;
 }
 .quiz-complete-icon {
   display: inline-flex;
-  width: 54px;
-  height: 54px;
+  width: 56px;
+  height: 56px;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  color: #21ba45;
-  background: #edf9f0;
-  font-size: 1.4rem;
+  border-radius: 50%;
+  color: #10b981;
+  background: #ecfdf5;
+  border: 2px solid #a7f3d0;
+  font-size: 1.5rem;
 }
 .quiz-complete h3 {
-  margin: 0.9rem 0 0.35rem;
-  color: #172033;
-  font-size: 1.35rem;
+  margin: 1rem 0 0.35rem;
+  color: #0f172a;
+  font-size: 1.4rem;
+  font-weight: 700;
 }
 .quiz-complete > p {
   margin: 0;
-  color: #687386;
-}
-.quiz-complete > .ui.button {
-  margin-top: 1.25rem;
+  color: #64748b;
+  font-size: 0.95rem;
 }
 .quiz-review {
   max-width: 620px;
   margin: 1.5rem auto;
-  padding: 1rem;
-  border: 1px solid #f1c9c7;
-  border-radius: 9px;
-  background: #fff8f7;
+  padding: 1.25rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
   text-align: left;
 }
 .quiz-review h4 {
   margin: 0 0 0.8rem;
-  color: #9f3a38;
-}
-.quiz-review-table {
-  width: 100%;
-  overflow: visible;
+  color: #991b1b;
+  font-weight: 700;
 }
 .quiz-review-table .ui.table {
   width: 100%;
   margin: 0;
+  border-radius: 6px;
 }
 .quiz-review-guess {
   text-decoration: line-through;
+  color: #ef4444;
 }
 .quiz-perfect {
   display: block;

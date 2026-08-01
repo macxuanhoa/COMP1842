@@ -1,7 +1,33 @@
 const Category = require('../models/categoryModel');
 const Word = require('../models/wordModel');
 
+// ── helpers ──────────────────────────────────────────────────────────────
+
 const isGeneral = (name) => (name || '').trim().toLowerCase() === 'general';
+
+const normalizeCategoryName = (name) =>
+  typeof name === 'string' ? name.trim().replace(/\s+/g, ' ') : '';
+
+const sameCategoryName = (firstName, secondName) =>
+  normalizeCategoryName(firstName).toLowerCase() ===
+  normalizeCategoryName(secondName).toLowerCase();
+
+const getCategoryValidationError = (name, categories, excludeId = null) => {
+  if (!name || !name.trim()) return 'Category name is required.';
+  if (name.trim().length < 2) return 'Category name must be at least 2 characters.';
+  if (name.trim().length > 40) return 'Category name cannot exceed 40 characters.';
+  if (isGeneral(name)) return 'General is a protected category.';
+
+  const duplicate = categories.find((cat) => {
+    if (excludeId && cat._id.toString() === excludeId) return false;
+    return sameCategoryName(cat.name, name);
+  });
+
+  if (duplicate) return 'Category already exists.';
+  return null;
+};
+
+// ── CRUD ─────────────────────────────────────────────────────────────────
 
 exports.list_all_categories = async (req, res) => {
   try {
@@ -19,12 +45,11 @@ exports.list_all_categories = async (req, res) => {
 
 exports.create_a_category = async (req, res) => {
   try {
-    const name = (req.body.name || '').trim();
-    if (!name) return res.status(400).json({ message: 'Category name is required.' });
-    if (isGeneral(name)) return res.status(400).json({ message: 'General is a protected category.' });
+    const name = normalizeCategoryName(req.body.name);
+    const categories = await Category.find({});
 
-    const existing = await Category.findOne({ name });
-    if (existing) return res.status(409).json({ message: 'Category already exists.' });
+    const error = getCategoryValidationError(name, categories);
+    if (error) return res.status(400).json({ message: error });
 
     const newCategory = new Category({ name });
     const saved = await newCategory.save();
@@ -40,18 +65,22 @@ exports.update_a_category = async (req, res) => {
     if (!category) return res.status(404).json({ message: 'Category not found.' });
     if (isGeneral(category.name)) return res.status(400).json({ message: 'Cannot edit General category.' });
 
-    const newName = (req.body.name || '').trim();
-    if (!newName) return res.status(400).json({ message: 'Category name is required.' });
-    if (isGeneral(newName)) return res.status(400).json({ message: 'General is a protected category.' });
+    const newName = normalizeCategoryName(req.body.name);
+    const categories = await Category.find({});
 
-    const duplicate = await Category.findOne({ name: newName });
-    if (duplicate && duplicate._id.toString() !== req.params.categoryId) {
-      return res.status(409).json({ message: 'Category already exists.' });
-    }
+    const error = getCategoryValidationError(newName, categories, req.params.categoryId);
+    if (error) return res.status(400).json({ message: error });
 
-    await Word.updateMany({ category: category.name }, { category: newName });
+    const oldName = category.name;
+
     category.name = newName;
     const updated = await category.save();
+
+    await Word.updateMany(
+      { category: oldName },
+      { $set: { category: newName } }
+    );
+
     res.json(updated);
   } catch (error) {
     res.status(400).json({ message: 'Failed to update category.' });

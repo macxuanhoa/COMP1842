@@ -5,17 +5,20 @@ const WordSchema = new Schema({
   german: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 80
   },
   english: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 80
   },
   french: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 80
   },
   category: {
     type: String,

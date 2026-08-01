@@ -1,18 +1,18 @@
 <template>
-  <div class="words-page">
-    <header class="library-header">
+  <div class="workspace-page words-page">
+    <header class="workspace-header">
       <div>
-        <div class="library-eyebrow">
-          <i class="book open icon"></i>
-          Vocabulary collection
-        </div>
+        <div class="workspace-eyebrow"><i class="book open icon"></i> Vocabulary collection</div>
         <h1>Vocabulary Library</h1>
         <p>Browse, filter, and manage your multilingual dictionary.</p>
       </div>
-      <router-link to="/words/new" class="ui primary button">
-        <i class="plus icon"></i>
-        Add new word
-      </router-link>
+
+      <div class="workspace-header-actions">
+        <router-link to="/words/new" class="ui primary button">
+          <i class="plus icon"></i>
+          Add new word
+        </router-link>
+      </div>
     </header>
 
     <section class="ui segment library-filters">
@@ -21,14 +21,16 @@
           <h2>Find vocabulary</h2>
           <p>Narrow the library without changing your saved words.</p>
         </div>
-        <span class="library-panel-icon" aria-hidden="true">
+
+        <span class="workspace-panel-icon" aria-hidden="true">
           <i class="filter icon"></i>
         </span>
       </div>
 
       <div class="ui form">
         <div class="field">
-          <label>Search</label>
+          <label><i class="search icon"></i> Search</label>
+
           <div class="ui icon input fluid">
             <input
               type="text"
@@ -41,23 +43,34 @@
 
         <div class="library-filter-grid">
           <div class="field">
-            <label>Category</label>
+            <label><i class="tag icon"></i> Category</label>
+
             <select class="ui dropdown fluid" v-model="selectedCategory">
               <option value="">All Categories</option>
-              <option v-for="categoryName in categories" :key="categoryName" :value="categoryName">{{ categoryName }}</option>
+
+              <option
+                v-for="categoryName in categories"
+                :key="categoryName"
+                :value="categoryName"
+              >
+                {{ categoryName }}
+              </option>
             </select>
           </div>
 
           <div class="field">
-            <label>Favourite Status</label>
+            <label><i class="star outline icon"></i> Favourite Status</label>
+
             <select class="ui dropdown fluid" v-model="selectedFavouriteFilter">
               <option value="all">All Words</option>
               <option value="fav">Favourites Only</option>
               <option value="normal">Non-favourites</option>
             </select>
           </div>
+
           <div class="field">
-            <label>Sort By</label>
+            <label><i class="sort amount down icon"></i> Sort By</label>
+
             <select class="ui dropdown fluid" v-model="selectedSortOrder">
               <option value="newest">Newest Added</option>
               <option value="oldest">Oldest Added</option>
@@ -71,13 +84,15 @@
       <div class="library-panel-heading library-panel-heading-table">
         <div>
           <h2>Vocabulary entries</h2>
+
           <p>
             {{ visibleWords.length }}
             {{ visibleWords.length === 1 ? 'word' : 'words' }} in this view
           </p>
         </div>
-        <span class="library-panel-icon library-panel-icon-blue" aria-hidden="true">
-          <i class="list ul icon"></i>
+
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="table icon"></i>
         </span>
       </div>
 
@@ -86,10 +101,15 @@
           <div class="library-empty-icon">
             <i class="search icon"></i>
           </div>
+
           <div class="library-empty-text">
             No vocabulary entries match your criteria.
           </div>
-          <router-link to="/words/new" class="ui positive button icon labeled library-empty-button">
+
+          <router-link
+            to="/words/new"
+            class="ui positive button icon labeled library-empty-button"
+          >
             <i class="plus icon"></i>
             Add New Word
           </router-link>
@@ -105,16 +125,24 @@
               <col class="category-column" />
               <col class="actions-column" />
             </colgroup>
+
             <thead>
               <tr>
-                <th class="center aligned"><i class="star outline icon"></i></th>
-                <th>English</th>
-                <th>German</th>
-                <th>French</th>
-                <th>Category</th>
-                <th class="center aligned">Actions</th>
+                <th class="center aligned" title="Favourite">
+                  <i class="star icon yellow"></i>
+                </th>
+
+                <th><i class="united kingdom flag"></i> English (EN)</th>
+                <th><i class="germany flag"></i> German (DE)</th>
+                <th><i class="france flag"></i> French (FR)</th>
+                <th><i class="tag icon"></i> Category</th>
+
+                <th class="center aligned">
+                  <i class="cog icon"></i> Actions
+                </th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="word in visibleWords" :key="word._id">
                 <td
@@ -125,18 +153,68 @@
                   <i :class="[word.favourite ? 'star icon yellow' : 'star outline icon grey']"></i>
                 </td>
 
+                <!-- English -->
                 <td>
-                  <span class="language-text" :title="word.english">{{ word.english || '—' }}</span>
+                  <div class="language-with-audio">
+                    <span class="language-text" :title="word.english">
+                      {{ word.english || '—' }}
+                    </span>
+
+                    <button
+                      type="button"
+                      class="language-audio-button"
+                      title="Listen English pronunciation"
+                      aria-label="Listen English pronunciation"
+                      @click.stop="speakWord(word.english, 'en-US')"
+                    >
+                      <i class="volume up icon"></i>
+                    </button>
+                  </div>
                 </td>
+
+                <!-- German -->
                 <td>
-                  <span class="language-text" :title="word.german">{{ word.german || '—' }}</span>
+                  <div class="language-with-audio">
+                    <span class="language-text" :title="word.german">
+                      {{ word.german || '—' }}
+                    </span>
+
+                    <button
+                      type="button"
+                      class="language-audio-button"
+                      title="Listen German pronunciation"
+                      aria-label="Listen German pronunciation"
+                      @click.stop="speakWord(word.german, 'de-DE')"
+                    >
+                      <i class="volume up icon"></i>
+                    </button>
+                  </div>
                 </td>
+
+                <!-- French -->
                 <td>
-                  <span class="language-text" :title="word.french">{{ word.french || '—' }}</span>
+                  <div class="language-with-audio">
+                    <span class="language-text" :title="word.french">
+                      {{ word.french || '—' }}
+                    </span>
+
+                    <button
+                      type="button"
+                      class="language-audio-button"
+                      title="Listen French pronunciation"
+                      aria-label="Listen French pronunciation"
+                      @click.stop="speakWord(word.french, 'fr-FR')"
+                    >
+                      <i class="volume up icon"></i>
+                    </button>
+                  </div>
                 </td>
 
                 <td>
-                  <span class="ui label mini basic category-label" :title="word.category || 'General'">
+                  <span
+                    class="ui label mini basic category-label"
+                    :title="word.category || 'General'"
+                  >
                     <i class="tag icon"></i>
                     <span>{{ word.category || 'General' }}</span>
                   </span>
@@ -152,6 +230,7 @@
                     >
                       <i class="eye icon"></i>
                     </router-link>
+
                     <router-link
                       :to="{ name: 'edit', params: { id: word._id } }"
                       class="ui icon mini basic primary button"
@@ -160,6 +239,7 @@
                     >
                       <i class="edit icon"></i>
                     </router-link>
+
                     <button
                       type="button"
                       class="ui icon mini basic negative button"
@@ -175,115 +255,262 @@
             </tbody>
           </table>
         </div>
+
+        <div v-if="filteredWords.length > 0" class="library-pagination">
+          <span class="pagination-summary">
+            {{ paginationSummary }}
+          </span>
+
+          <div v-if="totalPages > 1" class="pagination-controls">
+            <button
+              type="button"
+              class="pagination-btn"
+              :disabled="currentPage === 1"
+              @click="prevPage"
+            >
+              <i class="chevron left icon"></i> Prev
+            </button>
+
+            <button
+              v-for="page in totalPages"
+              :key="page"
+              type="button"
+              class="pagination-num"
+              :class="{ active: currentPage === page }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              type="button"
+              class="pagination-btn"
+              :disabled="currentPage === totalPages"
+              @click="nextPage"
+            >
+              Next <i class="chevron right icon"></i>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script>
-import { getWords, updateWord, deleteWord, getCategoryNames } from '../helpers/helpers';
+import {
+  getWords,
+  updateWord,
+  deleteWord,
+  getCategoryNames
+} from '../helpers/helpers';
 
 export default {
   name: 'words',
+
   data() {
     return {
-      words: [], // Danh sách từ.
-      categories: ['General'], // Danh sách category.
-      searchText: '', // Từ khóa tìm.
-      selectedCategory: '', // Category đang lọc.
-      selectedFavouriteFilter: 'all', // Trạng thái favourite.
-      selectedSortOrder: 'newest' // Kiểu sắp xếp.
+      words: [],
+      categories: ['General'],
+      searchText: '',
+      selectedCategory: '',
+      selectedFavouriteFilter: 'all',
+      selectedSortOrder: 'newest',
+      currentPage: 1,
+      pageSize: 8
     };
   },
-  computed: {
-    visibleWords() {
-      // Clone từ `this.words` trước để filter/sort mà không đụng trực tiếp mảng gốc.
-      let visibleWords = [...this.words];
 
-      // Dùng `searchText` để lọc theo 3 cột German, English, French rồi trả ra danh sách đang nhìn thấy trên bảng.
+  watch: {
+    searchText: 'resetPage',
+    selectedCategory: 'resetPage',
+    selectedFavouriteFilter: 'resetPage',
+    selectedSortOrder: 'resetPage',
+
+    filteredWords() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    }
+  },
+
+  computed: {
+    filteredWords() {
+      let filteredWords = [...this.words];
       const searchValue = this.searchText.trim().toLowerCase();
+
       if (searchValue) {
-        visibleWords = visibleWords.filter(word =>
-          word.german.toLowerCase().includes(searchValue) ||
-          word.english.toLowerCase().includes(searchValue) ||
-          word.french.toLowerCase().includes(searchValue)
+        filteredWords = filteredWords.filter(word => {
+          return ['german', 'english', 'french'].some(language => {
+            return (word[language] || '')
+              .toLowerCase()
+              .includes(searchValue);
+          });
+        });
+      }
+
+      if (this.selectedCategory) {
+        filteredWords = filteredWords.filter(
+          word => word.category === this.selectedCategory
         );
       }
 
-      // Dùng `selectedCategory` để chỉ giữ lại các từ thuộc category đang chọn.
-      if (this.selectedCategory) {
-        visibleWords = visibleWords.filter(word => word.category === this.selectedCategory);
-      }
-
-      // Dùng `selectedFavouriteFilter` để tách danh sách favourite hoặc non-favourite.
       if (this.selectedFavouriteFilter === 'fav') {
-        visibleWords = visibleWords.filter(word => word.favourite);
-      } else if (this.selectedFavouriteFilter === 'normal') {
-        visibleWords = visibleWords.filter(word => !word.favourite);
+        filteredWords = filteredWords.filter(word => word.favourite);
       }
 
-      // Dùng `selectedSortOrder` để sắp xếp theo `created_date`, rồi trả kết quả cuối cho template render.
-      if (this.selectedSortOrder === 'newest') {
-        visibleWords.sort((firstWord, secondWord) => new Date(secondWord.created_date) - new Date(firstWord.created_date));
-      } else {
-        visibleWords.sort((firstWord, secondWord) => new Date(firstWord.created_date) - new Date(secondWord.created_date));
+      if (this.selectedFavouriteFilter === 'normal') {
+        filteredWords = filteredWords.filter(word => !word.favourite);
       }
 
-      return visibleWords;
+      filteredWords.sort((firstWord, secondWord) => {
+        const firstDate = new Date(firstWord.created_date);
+        const secondDate = new Date(secondWord.created_date);
+
+        return this.selectedSortOrder === 'newest'
+          ? secondDate - firstDate
+          : firstDate - secondDate;
+      });
+
+      return filteredWords;
+    },
+
+    totalPages() {
+      return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
+    },
+
+    visibleWords() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.filteredWords.slice(start, start + this.pageSize);
+    },
+
+    paginationSummary() {
+      const total = this.filteredWords.length;
+
+      if (total === 0) return '0 words';
+
+      const start = (this.currentPage - 1) * this.pageSize + 1;
+      const end = Math.min(this.currentPage * this.pageSize, total);
+
+      return `Showing ${start}–${end} of ${total} words`;
     }
   },
-  async mounted() {
-    // Khi mở trang, gọi 2 hàm để nạp danh sách từ vào `words` và danh sách category vào `categories`.
-    await this.loadWords();
-    await this.loadCategories();
+
+  mounted() {
+    this.loadPageData();
   },
+
   methods: {
+    resetPage() {
+      this.currentPage = 1;
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+
+    goToPage(page) {
+      this.currentPage = page;
+    },
+
+    speakWord(text, languageCode) {
+      if (!text || !window.speechSynthesis) return;
+
+      window.speechSynthesis.cancel();
+
+      const speech = new SpeechSynthesisUtterance(text);
+      speech.lang = languageCode;
+
+      window.speechSynthesis.speak(speech);
+    },
+
+    async loadPageData() {
+      await Promise.all([
+        this.loadWords(),
+        this.loadCategories()
+      ]);
+    },
+
     async loadWords() {
       try {
-        // Gọi `getWords()` để lấy toàn bộ từ từ backend rồi lưu vào `this.words` cho bảng, search và filter cùng dùng.
-        this.words = await getWords();
+        const wordData = await getWords();
+        this.words = Array.isArray(wordData) ? wordData : [];
       } catch (error) {
-        console.error(error);
+        console.error('Failed to load words:', error);
       }
     },
+
     async loadCategories() {
       try {
-        this.categories = await getCategoryNames();
+        const categoryNames = await getCategoryNames();
+
+        this.categories = Array.isArray(categoryNames)
+          ? categoryNames
+          : ['General'];
       } catch (error) {
-        console.error(error);
+        console.error('Failed to load categories:', error);
       }
     },
+
     async toggleFavourite(word) {
-      // Đảo `word.favourite`, gửi bản mới qua `updateWord()`, rồi ghi kết quả trả về vào đúng phần tử trong `this.words`.
       const nextFavouriteValue = !word.favourite;
+
       try {
-        const updatedWord = await updateWord({ ...word, favourite: nextFavouriteValue });
-        const wordIndex = this.words.findIndex(savedWord => savedWord._id === word._id);
+        const updatedWord = await updateWord({
+          ...word,
+          favourite: nextFavouriteValue
+        });
+
+        const wordIndex = this.words.findIndex(
+          savedWord => savedWord._id === word._id
+        );
+
         if (wordIndex !== -1) {
           this.words.splice(wordIndex, 1, updatedWord);
         }
-        this.flash(nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
+
+        this.flash(
+          nextFavouriteValue
+            ? 'Added to Favourites!'
+            : 'Removed from Favourites',
+          'success',
+          { timeout: 1000 }
+        );
       } catch (error) {
         console.error(error);
         this.flash('Failed to update favourite status.', 'error');
       }
     },
+
     async deleteWordItem(word) {
-      // Hỏi lại bằng `window.confirm()` trước khi xóa vì thao tác này sẽ xóa dữ liệu khỏi backend.
-      if (!window.confirm('Are you sure you want to delete this word?')) {
-        return;
-      }
+      const confirmed = window.confirm(
+        'Are you sure you want to delete this word?'
+      );
+
+      if (!confirmed) return;
+
       try {
-        // Gọi `deleteWord()` để xóa trong database, rồi lọc lại `this.words` để bảng cập nhật ngay trên UI.
         await deleteWord(word._id);
+
+        this.words = this.words.filter(
+          savedWord => savedWord._id !== word._id
+        );
+
         this.flash('Word deleted successfully!', 'success');
-        this.words = this.words.filter(savedWord => savedWord._id !== word._id);
       } catch (error) {
         console.error(error);
         this.flash('Failed to delete the word.', 'error');
       }
     }
-  } 
+  }
 };
 </script>
 
@@ -291,183 +518,312 @@ export default {
 .words-page {
   padding-bottom: 2rem;
 }
-.library-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-}
-.library-header h1 {
-  margin: 0.3rem 0 0.45rem;
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  line-height: 1.05;
-  letter-spacing: -0.04em;
-}
-.library-header p {
-  margin: 0;
-  color: #687386;
-}
-.library-header .ui.button {
-  margin: 0;
-  flex: 0 0 auto;
-}
-.library-eyebrow {
-  color: #2185d0;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.library-eyebrow .icon {
-  margin-right: 0.45rem;
-}
-.library-filters, .library-panel {
-  margin: 0 !important;
-  padding: 1.5rem !important;
-  border: 1px solid #e5e9f0 !important;
-  box-shadow: 0 8px 28px rgba(33, 48, 76, 0.06) !important;
-}
+
+.library-filters,
 .library-panel {
-  margin-top: 1.25rem !important;
+  margin: 0 !important;
+  padding: 1.6rem !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.04),
+    0 6px 16px rgba(15, 23, 42, 0.02) !important;
 }
+
+.library-panel {
+  margin-top: 1.5rem !important;
+}
+
 .library-panel-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
-  padding-bottom: 1.15rem;
-  border-bottom: 1px solid #e5e9f0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
 }
+
 .library-panel-heading h2 {
   margin: 0;
-  font-size: 1.05rem;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
+
 .library-panel-heading p {
-  margin: 0.25rem 0 0;
-  color: #687386;
-  font-size: 0.8rem;
+  margin: 0.2rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
-.library-panel-icon {
-  display: flex;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 11px;
-  color: #2185d0;
-  background: #eaf5fc;
-  box-sizing: border-box;
-  padding: 0;
-}
-.library-panel-icon .icon {
-  margin: 0 !important;
-  display: block;
-  line-height: 1;
-}
-.library-panel-icon-blue {
-  color: #2185d0;
-  background: #eaf5fc;
-}
+
 .library-filter-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
+
 .library-filter-grid .field {
   margin: 0 !important;
 }
+
 .library-table-wrapper {
   width: 100%;
   overflow-x: auto;
 }
+
 .library-table {
   margin: 0 !important;
 }
-.library-table .favourite-column { width: 50px; }
-.library-table .language-column { width: auto; }
-.library-table .category-column { width: 140px; }
-.library-table .actions-column { width: 130px; }
-.library-table th {
-  background: #f9fafb !important;
-  color: #687386 !important;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+
+.library-table .favourite-column {
+  width: 50px;
 }
+
+.library-table .language-column {
+  width: auto;
+}
+
+.library-table .category-column {
+  width: 140px;
+}
+
+.library-table .actions-column {
+  width: 130px;
+}
+
+.library-table th {
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+  color: #0f172a !important;
+  background: #f8fafc !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
 .library-table td {
   vertical-align: middle !important;
 }
+
 .favourite-cell {
   cursor: pointer;
 }
+
+.language-with-audio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .language-text {
   display: block;
+  flex: 1;
+  min-width: 0;
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.language-audio-button {
+  display: inline-flex;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.language-audio-button .icon {
+  margin: 0 !important;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.language-audio-button:hover {
+  color: #0284c7;
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.language-audio-button:active {
+  background: #e0f2fe;
+}
+
+.language-audio-button:focus-visible {
+  outline: 2px solid rgba(2, 132, 199, 0.18);
+  outline-offset: 2px;
+}
+
+.category-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+  padding: 0.3em 0.65em !important;
+  color: #30394a !important;
+  background: #f7f9fb !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+}
+
+.category-label > span {
+  display: inline-block;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
 .library-row-actions {
   display: flex;
-  gap: 0.35rem;
   justify-content: center;
+  gap: 0.35rem;
 }
+
 .library-row-actions .ui.button {
   margin: 0;
   padding: 0.55rem 0.6rem !important;
 }
+
+.library-empty-actions .ui.button {
+  margin: 0;
+}
+
+.library-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pagination-summary {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  color: #0284c7;
+  background: #f8fafc;
+  border-color: #0284c7;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-num {
+  display: inline-flex;
+  min-width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-num:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.pagination-num.active {
+  color: #ffffff;
+  background: #0f172a;
+  border-color: #0f172a;
+  font-weight: 700;
+}
+
 .library-empty-state {
-  padding: 3rem 1.75rem;
-  border: 1px dashed #d9dee7;
-  border-radius: 12px;
-  color: #687386;
-  background: #fafbfc;
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1.25rem;
+  padding: 3rem 1.75rem;
+  color: #687386;
+  background: #fafbfc;
+  border: 1px dashed #d9dee7;
+  border-radius: 12px;
+  text-align: center;
 }
+
 .library-empty-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   color: #9aa3b3;
 }
+
 .library-empty-icon .icon {
   margin: 0 !important;
   font-size: 2.75rem;
   line-height: 1;
 }
+
 .library-empty-text {
+  max-width: 420px;
+  color: #3c4557;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #3c4557;
-  max-width: 420px;
   line-height: 1.5;
 }
+
 .library-empty-button {
   margin: 0.25rem 0 0 0 !important;
   padding: 0.85rem 1.6rem !important;
-  font-size: 0.95rem;
   border-radius: 8px !important;
-}
-.category-label {
-  color: #30394a !important;
-  background: #f7f9fb !important;
-}
-.category-label > span {
-  max-width: 110px;
-  display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: bottom;
+  font-size: 0.95rem;
 }
 </style>

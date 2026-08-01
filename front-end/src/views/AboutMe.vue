@@ -2,10 +2,7 @@
   <div class="workspace-page about-page">
     <header class="workspace-header">
       <div>
-        <div class="workspace-eyebrow">
-          <i class="id badge icon"></i>
-          Student profile
-        </div>
+        <div class="workspace-eyebrow"><i class="id badge icon"></i> Student profile</div>
         <h1>About Me</h1>
         <p>Student information and a code-based overview of this coursework project.</p>
       </div>
@@ -17,17 +14,18 @@
       </div>
     </header>
 
+    <!-- Student Profile Section -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon green" aria-hidden="true">
-            <i class="user circle icon"></i>
-          </span>
           <div>
-            <h2>Profile</h2>
+            <h2>Profile Overview</h2>
             <p>Basic student information for COMP1842.</p>
           </div>
         </div>
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="user circle icon"></i>
+        </span>
       </div>
 
       <div class="about-profile">
@@ -70,17 +68,18 @@
       </div>
     </section>
 
+    <!-- Project Context Section -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon violet" aria-hidden="true">
-            <i class="info circle icon"></i>
-          </span>
           <div>
             <h2>About The Project</h2>
             <p>Written from the source code that is currently in the project.</p>
           </div>
         </div>
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="info circle icon"></i>
+        </span>
       </div>
 
       <p class="about-copy">
@@ -97,49 +96,51 @@
       </p>
     </section>
 
+    <!-- Technologies Section -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon orange" aria-hidden="true">
-            <i class="code icon"></i>
-          </span>
           <div>
             <h2>Technologies Used</h2>
             <p>Only technologies confirmed in the current source code are listed here.</p>
           </div>
         </div>
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="code icon"></i>
+        </span>
       </div>
 
       <div class="about-grid">
         <article v-for="tech in technologies" :key="tech.name" class="about-card">
-          <h3>{{ tech.name }}</h3>
+          <h3><i class="cube icon text-blue"></i> {{ tech.name }}</h3>
           <p>{{ tech.description }}</p>
         </article>
       </div>
     </section>
 
+    <!-- Core Functionality Section -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon" aria-hidden="true">
-            <i class="tasks icon"></i>
-          </span>
           <div>
             <h2>Core Functionality</h2>
             <p>CRUD features found in routes, views, components, and controllers.</p>
           </div>
         </div>
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="tasks icon"></i>
+        </span>
       </div>
 
       <div class="about-list-grid">
         <div class="about-list-card">
-          <h3>Word Management</h3>
+          <h3><i class="book icon text-blue"></i> Word Management</h3>
           <ul>
             <li v-for="item in coreWordFeatures" :key="item">{{ item }}</li>
           </ul>
         </div>
         <div class="about-list-card">
-          <h3>Category Management</h3>
+          <h3><i class="tags icon text-blue"></i> Category Management</h3>
           <ul>
             <li v-for="item in coreCategoryFeatures" :key="item">{{ item }}</li>
           </ul>
@@ -147,66 +148,70 @@
       </div>
     </section>
 
+    <!-- Additional Features Section -->
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon green" aria-hidden="true">
-            <i class="plus square outline icon"></i>
-          </span>
           <div>
             <h2>Additional Functionality</h2>
             <p>Features implemented beyond basic CRUD operations.</p>
           </div>
         </div>
+        <span class="workspace-panel-icon" aria-hidden="true">
+          <i class="plus square outline icon"></i>
+        </span>
       </div>
 
       <div class="about-grid">
         <article v-for="item in additionalFeatures" :key="item.title" class="about-card">
-          <h3>{{ item.title }}</h3>
+          <h3><i class="star outline icon text-yellow"></i> {{ item.title }}</h3>
           <p>{{ item.description }}</p>
         </article>
       </div>
     </section>
 
-    <section class="ui segment workspace-panel">
-      <div class="workspace-panel-heading">
-        <div class="workspace-panel-title">
-          <span class="workspace-panel-icon violet" aria-hidden="true">
+    <!-- Learnings & Goals Grid -->
+    <div class="about-footer-grid">
+      <section class="ui segment workspace-panel">
+        <div class="workspace-panel-heading">
+          <div class="workspace-panel-title">
+            <div>
+              <h2>What I Learned</h2>
+              <p>Reflection based on real architecture.</p>
+            </div>
+          </div>
+          <span class="workspace-panel-icon" aria-hidden="true">
             <i class="lightbulb icon"></i>
           </span>
-          <div>
-            <h2>What I Learned</h2>
-            <p>Reflection based on the real project architecture.</p>
-          </div>
         </div>
-      </div>
 
-      <p class="about-copy">
-        Through this project, I learned how to build a full-stack JavaScript application with a Vue
-        frontend, an Express backend, and MongoDB for data storage. I also practised routing,
-        reusable components, REST API communication with Axios, CRUD operations, form validation,
-        error handling, and storing extra browser-side data for quiz history and retake sessions.
-      </p>
-    </section>
+        <p class="about-copy">
+          Through this project, I learned how to build a full-stack JavaScript application with a Vue
+          frontend, an Express backend, and MongoDB for data storage. I also practised routing,
+          reusable components, REST API communication with Axios, CRUD operations, form validation,
+          error handling, and storing extra browser-side data for quiz history and retake sessions.
+        </p>
+      </section>
 
-    <section class="ui segment workspace-panel">
-      <div class="workspace-panel-heading">
-        <div class="workspace-panel-title">
-          <span class="workspace-panel-icon orange" aria-hidden="true">
+      <section class="ui segment workspace-panel">
+        <div class="workspace-panel-heading">
+          <div class="workspace-panel-title">
+            <div>
+              <h2>Future Goal</h2>
+              <p>A short goal for continued learning.</p>
+            </div>
+          </div>
+          <span class="workspace-panel-icon" aria-hidden="true">
             <i class="flag checkered icon"></i>
           </span>
-          <div>
-            <h2>Future Goal</h2>
-            <p>A short goal for continued learning.</p>
-          </div>
         </div>
-      </div>
 
-      <p class="about-copy">
-        My goal is to continue improving my frontend and backend development skills and become a
-        professional full-stack web developer.
-      </p>
-    </section>
+        <p class="about-copy">
+          My goal is to continue improving my frontend and backend development skills and become a
+          professional full-stack web developer.
+        </p>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -313,108 +318,102 @@ export default {
 .about-page {
   padding-bottom: 2.5rem;
 }
-
 .about-profile {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 100px minmax(0, 1fr);
   gap: 1.5rem;
-  align-items: start;
+  align-items: center;
 }
-
 .about-avatar {
   display: flex;
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   align-items: center;
   justify-content: center;
-  border-radius: 28px;
+  border-radius: 16px;
   color: #2185d0;
-  background: linear-gradient(135deg, #eaf5fc, #f5f9ff);
-  box-shadow: inset 0 0 0 1px #d8e8f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
 }
-
 .about-avatar .icon {
   margin: 0 !important;
-  font-size: 3rem;
+  font-size: 2.5rem;
 }
-
 .profile-content h3 {
-  margin: 0 0 0.65rem;
-  font-size: 1.5rem;
-  color: #172033;
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+  color: #0f172a;
+  font-weight: 700;
 }
-
 .profile-intro,
 .about-copy {
   margin: 0;
-  color: #4e596d;
-  line-height: 1.7;
+  color: #475569;
+  line-height: 1.65;
+  font-size: 0.9rem;
 }
-
 .about-copy + .about-copy {
+  margin-top: 0.85rem;
+}
+.profile-list {
   margin-top: 1rem;
 }
-
-.profile-list {
-  margin-top: 1.25rem;
-}
-
 .profile-list .item {
-  padding: 0.25rem 0;
+  padding: 0.3rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
-
 .profile-list .icon {
   color: #2185d0;
+  font-size: 1.1rem;
 }
-
 .about-grid,
-.about-list-grid {
+.about-list-grid,
+.about-footer-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
 }
-
 .about-card,
 .about-list-card {
-  padding: 1rem 1.1rem;
-  border: 1px solid #e5e9f0;
-  border-radius: 12px;
-  background: #fafbfc;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
 }
-
 .about-card h3,
 .about-list-card h3 {
-  margin: 0 0 0.45rem;
-  color: #172033;
-  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
-
 .about-card p,
 .about-list-card li {
-  color: #4e596d;
-  line-height: 1.6;
+  color: #475569;
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
-
 .about-list-card ul {
   margin: 0;
-  padding-left: 1.15rem;
+  padding-left: 1.1rem;
 }
-
 .about-list-card li + li {
-  margin-top: 0.45rem;
+  margin-top: 0.4rem;
 }
+.text-blue { color: #2185d0; }
+.text-yellow { color: #eab308; }
 
 @media (max-width: 767px) {
   .about-profile,
   .about-grid,
-  .about-list-grid {
+  .about-list-grid,
+  .about-footer-grid {
     grid-template-columns: 1fr;
-  }
-
-  .about-avatar {
-    width: 96px;
-    height: 96px;
-    border-radius: 24px;
   }
 }
 </style>

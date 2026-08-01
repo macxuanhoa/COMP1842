@@ -27,10 +27,6 @@ export default {
 </script>
 
 <style scoped>
-.not-found-page {
-  padding-top: 2rem;
-}
-
 .not-found-panel {
   padding-top: 3rem !important;
   padding-bottom: 3rem !important;

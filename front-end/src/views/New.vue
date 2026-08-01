@@ -2,10 +2,7 @@
   <div class="workspace-page workspace-page-narrow">
     <header class="workspace-header">
       <div>
-        <div class="workspace-eyebrow">
-          <i class="plus circle icon"></i>
-          Build your vocabulary
-        </div>
+        <div class="workspace-eyebrow"><i class="plus circle icon"></i> Build your vocabulary</div>
         <h1>Add New Word</h1>
         <p>Insert a new multilingual entry into your learning dictionary.</p>
       </div>
@@ -20,9 +17,6 @@
     <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
-          <span class="workspace-panel-icon green" aria-hidden="true">
-            <i class="language icon"></i>
-          </span>
           <div>
             <h2>Word information</h2>
             <p>Add translations, a category, and favourite status.</p>

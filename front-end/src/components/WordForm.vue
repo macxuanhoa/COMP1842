@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import { getCategoryNames, createCategory } from '../helpers/helpers';
+import { getCategoryNames } from '../helpers/helpers';
 
 export default {
   name: 'WordForm',
@@ -116,50 +116,35 @@ export default {
         this.newCategoryName = '';
       }
     },
-    async onSubmit() {
+    onSubmit() {
       if (!this.word.german || !this.word.english || !this.word.french) {
         this.errorMessage = 'Please fill in all required fields.';
         return;
       }
 
-      try {
-        let category = this.word.category || 'General';
+      let category = this.word.category || 'General';
 
-        if (this.isAddingCategory) {
-          category = this.newCategoryName.trim();
+      if (this.isAddingCategory) {
+        category = this.newCategoryName.trim();
 
-          if (!category) {
-            this.errorMessage = 'Please enter a category name.';
-            return;
-          }
-
-          if (category.length < 2) {
-            this.errorMessage = 'Category name must be at least 2 characters.';
-            return;
-          }
-
-          if (category.length > 40) {
-            this.errorMessage = 'Category name cannot exceed 40 characters.';
-            return;
-          }
-
-          const existingCategory = this.categories.find(
-            name => name.toLowerCase() === category.toLowerCase()
-          );
-
-          if (existingCategory) {
-            category = existingCategory;
-          } else {
-            await createCategory({ name: category });
-            this.categories = await getCategoryNames();
-          }
+        if (!category) {
+          this.errorMessage = 'Please enter a category name.';
+          return;
         }
 
-        this.errorMessage = '';
-        this.$emit('createOrUpdate', { ...this.word, category });
-      } catch (error) {
-        this.errorMessage = error?.response?.data?.message || 'Failed to save category.';
+        if (category.length < 2) {
+          this.errorMessage = 'Category name must be at least 2 characters.';
+          return;
+        }
+
+        if (category.length > 40) {
+          this.errorMessage = 'Category name cannot exceed 40 characters.';
+          return;
+        }
       }
+
+      this.errorMessage = '';
+      this.$emit('createOrUpdate', { ...this.word, category });
     }
   }
 };
