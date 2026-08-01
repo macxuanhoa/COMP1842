@@ -297,12 +297,12 @@ export default {
           description: 'The word details page uses browser speech synthesis to pronounce saved words.'
         },
         {
-          title: 'Protected General Category',
-          description: 'The default General category is created automatically and cannot be edited or deleted.'
+          title: 'Inline Category Creation',
+          description: 'Users can select an existing category or create a new one directly within the word form.'
         },
         {
-          title: 'Category Rename Sync',
-          description: 'When a category name changes, linked words are updated in the backend as well.'
+          title: 'Category Name Sync',
+          description: 'Categories use ObjectId references — renaming a category instantly updates all linked words via populate.'
         },
         {
           title: 'Validation and Error Feedback',

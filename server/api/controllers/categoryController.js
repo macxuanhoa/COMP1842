@@ -3,12 +3,7 @@ const Word = require('../models/wordModel');
 
 exports.list_all_categories = async (req, res) => {
   try {
-    const categories = await Category.find({});
-    categories.sort((a, b) => {
-      if (a.name === 'General') return -1;
-      if (b.name === 'General') return 1;
-      return a.name.localeCompare(b.name);
-    });
+    const categories = await Category.find({}).sort({ name: 1 });
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Failed to load categories.' });
@@ -18,16 +13,17 @@ exports.list_all_categories = async (req, res) => {
 exports.create_a_category = async (req, res) => {
   try {
     const name = req.body.name;
-    if (!name) return res.status(400).json({ message: 'Category name is required.' });
-    if (name.length < 2) return res.status(400).json({ message: 'Name must be at least 2 characters.' });
 
     const categories = await Category.find({});
     const duplicate = categories.find(category => category.name.toLowerCase() === name.toLowerCase());
     if (duplicate) return res.status(400).json({ message: 'Category already exists.' });
 
-    const saved = await new Category({ name }).save();
+    const saved = await Category.create({ name });
     res.status(201).json(saved);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
+    }
     res.status(400).json({ message: error.message });
   }
 };
@@ -36,11 +32,8 @@ exports.update_a_category = async (req, res) => {
   try {
     const category = await Category.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found.' });
-    if (category.name === 'General') return res.status(400).json({ message: 'Cannot edit the default category.' });
 
     const newName = req.body.name;
-    if (!newName) return res.status(400).json({ message: 'Category name is required.' });
-    if (newName.length < 2) return res.status(400).json({ message: 'Name must be at least 2 characters.' });
 
     const categories = await Category.find({});
     const duplicate = categories.find(category =>
@@ -53,6 +46,9 @@ exports.update_a_category = async (req, res) => {
     const updated = await category.save();
     res.json(updated);
   } catch (error) {
+      if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
+    }
     res.status(400).json({ message: error.message });
   }
 };
@@ -61,15 +57,11 @@ exports.delete_a_category = async (req, res) => {
   try {
     const category = await Category.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found.' });
-    if (category.name === 'General') return res.status(400).json({ message: 'Cannot delete the default category.' });
 
-    const defaultCategory = await Category.findOne({ name: 'General' });
-    if (!defaultCategory) return res.status(500).json({ message: 'No default category configured.' });
-
-    await Word.updateMany(
-      { category: category._id },
-      { category: defaultCategory._id }
-    );
+    const wordCount = await Word.countDocuments({ category: category._id });
+    if (wordCount > 0) {
+      return res.status(400).json({ message: 'Cannot delete a category that is currently used by words.' });
+    }
 
     await Category.findByIdAndDelete(req.params.categoryId);
     res.json({ message: 'Category deleted successfully.' });

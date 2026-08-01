@@ -122,24 +122,24 @@ export default {
   name: 'show',
   data() {
     return {
-      word: null // dữ liệu word load từ API (null = đang load hoặc lỗi)
+      word: null // dữ liệu word load từ API
     };
   },
-  // Khi mount: gọi API lấy word theo ID từ URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
-    } catch (error) { /* không tìm thấy word */ }
+    } catch (error) {
+      this.flash('Failed to load word details.', 'error');
+    }
   },
   methods: {
-    // Phát âm từ bằng Web Speech API (trình duyệt)
+    // Phát âm thanh bằng Web Speech API của trình duyệt
     speakWord(text, languageCode) {
       if (!text || !window.speechSynthesis) return;
-      const speech = new SpeechSynthesisUtterance(text);
-      speech.lang = languageCode;
-      window.speechSynthesis.speak(speech);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = languageCode;
+      window.speechSynthesis.speak(utterance);
     },
-    // Bật/tắt trạng thái yêu thích (favourite)
     async toggleFavourite() {
       if (!this.word) return;
       const nextFavouriteValue = !this.word.favourite;

@@ -1,3 +1,6 @@
+// Mỗi document Word = 1 từ vựng 3 ngôn ngữ
+// category là ObjectId → ref Categories, đảm bảo toàn vẹn tham chiếu khi đổi tên / xóa category
+// favourite mặc định false — người dùng tự đánh dấu sau
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 

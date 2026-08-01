@@ -100,13 +100,6 @@
                   </div>
                   <div v-else class="category-name-cell">
                     <strong>{{ category.name }}</strong>
-                    <span
-                      v-if="category.name === 'General'"
-                      class="ui label mini basic category-default-label"
-                      title="Protected default category"
-                    >
-                      Default
-                    </span>
                   </div>
                 </td>
 
@@ -140,8 +133,8 @@
                     </button>
                   </div>
 
-                  <!-- Không ở chế độ sửa và không bị khóa -->
-                  <div v-else-if="category.name !== 'General'" class="library-row-actions">
+                  <!-- Không ở chế độ sửa -->
+                  <div v-else class="library-row-actions">
                     <button
                       type="button"
                       class="ui icon mini basic primary button"
@@ -160,14 +153,6 @@
                     >
                       <i class="trash icon"></i>
                     </button>
-                  </div>
-
-                  <!-- Category bị khóa -->
-                  <div v-else>
-                    <span class="category-locked">
-                      <i class="lock icon"></i>
-                      Locked
-                    </span>
                   </div>
                 </td>
               </tr>
@@ -219,7 +204,7 @@
 
 <script>
 // ── Trang quản lý Category ───────────────────────────────────────────
-// Tạo, sửa, xóa category. Có phân trang. Category "General" bị khóa.
+// Tạo, sửa, xóa category. Có phân trang. Mọi category được đối xử như nhau.
 import {
   getWords,
   getCategories,
@@ -302,7 +287,9 @@ export default {
         const [categoriesData, wordsData] = await Promise.all([getCategories(), getWords()]);
         this.categories = categoriesData;
         this.words = wordsData;
-      } catch (error) { /* không tải được */ }
+      } catch (error) {
+        this.flash('Failed to load page data.', 'error');
+      }
     },
     // ── CRUD Category ────────────────────────────────────────────────
     // Tạo category mới
@@ -324,7 +311,6 @@ export default {
     },
     // Bắt đầu chỉnh sửa inline 1 dòng
     startCategoryEdit(category) {
-      if (category.name === 'General') return;
       this.editingCategoryId = category._id;
       this.editingCategoryName = category.name;
     },
@@ -346,9 +332,8 @@ export default {
         this.flash(error?.response?.data?.message || 'Failed to rename.', 'error');
       }
     },
-    // Xóa category (chỉ khi không có từ nào dùng nó, và không phải General)
+    // Xóa category (chỉ khi không có từ nào dùng nó)
     async deleteCategoryItem(category) {
-      if (category.name === 'General') return;
       if (this.getWordsUsingCategory(category._id) > 0) {
         return this.flash('Cannot delete a category with words.', 'error');
       }
@@ -434,14 +419,6 @@ export default {
   white-space: nowrap;
 }
 
-.category-default-label {
-  margin: 0 !important;
-  background: #f1f5f9 !important;
-  color: #475569 !important;
-  border-color: #cbd5e1 !important;
-  font-weight: 600 !important;
-}
-
 .category-count {
   display: inline-flex !important;
   align-items: center !important;
@@ -462,21 +439,6 @@ export default {
 .library-row-actions .ui.button {
   margin: 0;
   padding: 0.55rem 0.6rem !important;
-}
-
-.category-locked {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #94a3b8;
-  font-size: 0.78rem;
-  font-weight: 700;
-  vertical-align: middle;
-}
-.category-locked .icon {
-  margin: 0 !important;
-  vertical-align: middle;
-  line-height: 1;
 }
 
 .category-empty-state {

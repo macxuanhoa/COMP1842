@@ -202,7 +202,9 @@ export default {
           this.isSessionActive = true;
         }
       }
-    } catch (error) { /* không tải được dữ liệu */ }
+    } catch (error) {
+      this.flash('Failed to load test data.', 'error');
+    }
   },
   methods: {
     // Đảm bảo 2 ngôn ngữ hỏi/đáp không trùng nhau

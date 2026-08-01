@@ -103,50 +103,108 @@ body {
   padding-top: 5.25rem !important;
 }
 
-/* Swiss Obsidian Bespoke Floating Toast */
+/* ── Toast ────────────────────────────────────────────────────────── */
 .myFlash {
-  width: 350px;
   position: fixed;
-  bottom: 24px;
   right: 24px;
+  bottom: 24px;
   z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  width: min(350px, calc(100vw - 32px));
+  pointer-events: none;
 }
-.myFlash .flash-message {
-  padding: 14px 40px 14px 18px !important;
-  margin-bottom: 10px !important;
+
+.myFlash .flash__message {
+  position: relative !important;
+
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 13px 42px 13px 16px !important;
+
+  border: 1px solid #e5e7eb !important;
   border-radius: 8px !important;
-  font-size: 0.88rem !important;
+
+  font-size: 0.86rem !important;
   font-weight: 500 !important;
   line-height: 1.45 !important;
-  background: #0f172a !important;
-  color: #f8fafc !important;
-  border: 1px solid #1e293b !important;
-  box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.35), 0 4px 10px -2px rgba(0, 0, 0, 0.2) !important;
-  position: relative !important;
+
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.09) !important;
+
+  animation: toastIn 0.25s ease-out;
+  pointer-events: auto;
 }
-.myFlash .flash-message.success {
-  border-left: 4px solid #10b981 !important;
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.myFlash .flash-message.error {
-  border-left: 4px solid #ef4444 !important;
+
+/* Success */
+.myFlash .flash__message.success {
+  background: #eaf7ef !important;
+  border-color: #a9d9bb !important;
+  color: #276749 !important;
 }
-.myFlash .flash-message.info {
-  border-left: 4px solid #3b82f6 !important;
+
+/* Error */
+.myFlash .flash__message.error {
+  background: #fdecec !important;
+  border-color: #e8b4b4 !important;
+  color: #9b2c2c !important;
 }
-.myFlash .flash-message.warning {
-  border-left: 4px solid #f59e0b !important;
+
+/* Information */
+.myFlash .flash__message.info {
+  background: #edf4fd !important;
+  border-color: #b8cdec !important;
+  color: #2c5282 !important;
 }
-.myFlash .flash-close-button {
-  top: 12px;
-  right: 14px;
-  color: #94a3b8 !important;
-  opacity: 0.8;
-  font-size: 0.85rem;
-  transition: color 0.15s ease !important;
+
+/* Warning */
+.myFlash .flash__message.warning {
+  background: #fff4dc !important;
+  border-color: #e8cd91 !important;
+  color: #8a5a13 !important;
 }
-.myFlash .flash-close-button:hover {
-  color: #ffffff !important;
-  opacity: 1;
+
+/* Close button */
+.myFlash .flash__close-button {
+  position: absolute !important;
+  top: 50% !important;
+  right: 12px !important;
+
+  width: 24px;
+  height: 24px;
+  padding: 0 !important;
+
+  transform: translateY(-50%);
+
+  color: currentColor !important;
+  background: transparent !important;
+  border: none !important;
+
+  font-size: 0.8rem !important;
+  line-height: 1 !important;
+  opacity: 0.45;
+
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.myFlash .flash__close-button:hover {
+  opacity: 0.9;
 }
 
 /* Page Layout & Editorial Header */

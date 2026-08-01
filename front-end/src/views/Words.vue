@@ -413,13 +413,13 @@ export default {
       this.currentPage = page;
     },
 
-    // Phát âm từ bằng Web Speech API
+    // Phát âm thanh bằng Web Speech API của trình duyệt
     speakWord(text, languageCode) {
       if (!text || !window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      const speech = new SpeechSynthesisUtterance(text);
-      speech.lang = languageCode;
-      window.speechSynthesis.speak(speech);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = languageCode;
+      window.speechSynthesis.speak(utterance);
     },
 
     // Load words + categories từ API
@@ -428,7 +428,9 @@ export default {
         const [wordsData, categoriesData] = await Promise.all([getWords(), getCategories()]);
         this.words = wordsData;
         this.categories = categoriesData;
-      } catch (error) { /* không tải được */ }
+      } catch (error) {
+        this.flash('Failed to load vocabulary data.', 'error');
+      }
     },
 
     // Bật/tắt trạng thái yêu thích
