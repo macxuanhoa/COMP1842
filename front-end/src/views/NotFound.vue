@@ -20,6 +20,8 @@
 </template>
 
 <script>
+// ── Trang 404 ────────────────────────────────────────────────────────
+// Hiển thị khi người dùng truy cập URL không tồn tại
 export default {
   name: 'not-found'
 };

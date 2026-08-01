@@ -29,15 +29,16 @@
 </template>
 
 <script>
+// ── Trang thêm từ vựng mới ───────────────────────────────────────────
+// Hiển thị WordForm trống, nhận dữ liệu và gọi API tạo word
 import WordForm from '../components/WordForm.vue';
 import { createWord } from '../helpers/helpers';
 
 export default {
   name: 'new-word',
-  components: {
-    'word-form': WordForm
-  },
+  components: { 'word-form': WordForm },
   methods: {
+    // Nhận dữ liệu từ WordForm, gọi API tạo word mới
     async createOrUpdate(word) {
       try {
         await createWord(word);

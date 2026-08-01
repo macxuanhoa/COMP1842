@@ -33,6 +33,8 @@
 </template>
 
 <script>
+// ── Component gốc của ứng dụng ──────────────────────────────────────
+// Chứa thanh navigation (navbar) + flash message + router-view
 export default {
   name: 'app'
 };

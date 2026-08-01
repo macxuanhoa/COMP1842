@@ -1,3 +1,7 @@
+// ── Vue Router ──────────────────────────────────────────────────────
+// Định nghĩa tất cả các route (trang) trong ứng dụng
+// Sử dụng history mode để URL sạch, không có dấu #
+
 import Vue from 'vue';
 import Router from 'vue-router';
 import Dashboard from './views/Dashboard.vue';

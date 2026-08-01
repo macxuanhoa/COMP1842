@@ -34,19 +34,20 @@
 </template>
 
 <script>
+// ── Trang chỉnh sửa từ vựng ──────────────────────────────────────────
+// Load word theo ID từ URL, hiển thị WordForm với dữ liệu có sẵn
 import WordForm from '../components/WordForm.vue';
 import { getWord, updateWord } from '../helpers/helpers';
 
 export default {
   name: 'edit',
-  components: {
-    'word-form': WordForm
-  },
+  components: { 'word-form': WordForm },
   data() {
     return {
-      word: null
+      word: null // dữ liệu word load từ API (null = đang load hoặc lỗi)
     };
   },
+  // Khi component mount: gọi API lấy word theo ID trên URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
@@ -55,6 +56,7 @@ export default {
     }
   },
   methods: {
+    // Nhận dữ liệu từ WordForm, gọi API cập nhật word
     async createOrUpdate(updatedWord) {
       try {
         await updateWord(updatedWord);

@@ -120,69 +120,73 @@
 </template>
 
 <script>
+// ── Trang thiết lập quiz ─────────────────────────────────────────────
+// Chọn ngôn ngữ hỏi/đáp, bộ từ, số câu hỏi → khởi động VocabTest
 import { getWords, getCategories } from '../helpers/helpers';
 import VocabTest from '../components/VocabTest.vue';
 
 export default {
   name: 'test',
-  components: {
-    'vocab-test': VocabTest
-  },
+  components: { 'vocab-test': VocabTest },
   data() {
     return {
-      words: [],
-      categories: [],
-      questionLanguage: 'german',
-      answerLanguage: 'english',
-      selectedWordSet: 'all',
-      selectedCategory: '',
-      selectedQuestionCount: 'all',
-      customQuestionCount: 5,
-      isSessionActive: false,
-      testWords: []
+      words: [],                  // tất cả từ trong database
+      categories: [],             // tất cả category
+      questionLanguage: 'german', // ngôn ngữ câu hỏi (mặc định: hỏi tiếng Đức)
+      answerLanguage: 'english',  // ngôn ngữ trả lời (mặc định: trả lời tiếng Anh)
+      selectedWordSet: 'all',     // bộ từ: 'all' | 'fav' | 'category'
+      selectedCategory: '',       // category đã chọn (khi wordSet = 'category')
+      selectedQuestionCount: 'all', // số câu: 'all' | 5 | 10 | 20 | 'custom'
+      customQuestionCount: 5,     // số câu tùy chỉnh
+      isSessionActive: false,     // đang trong phiên quiz
+      testWords: []               // danh sách từ đưa vào quiz
     };
   },
   computed: {
+    // Số từ được đánh dấu yêu thích
     favouriteWordCount() {
       return this.words.filter(word => word.favourite).length;
     },
+    // Danh sách từ khả dụng dựa trên bộ lọc đã chọn
     availableWords() {
-      if (this.selectedWordSet === 'fav') {
-        return this.words.filter(word => word.favourite);
-      }
-
+      if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite);
       if (this.selectedWordSet === 'category') {
         if (!this.selectedCategory) return [];
-
         return this.words.filter(
           word => String(word.category?._id || word.category) === String(this.selectedCategory)
         );
       }
-
-      return this.words;
+      return this.words; // 'all'
     },
     availableWordCount() {
       return this.availableWords.length;
     },
+    // Các lựa chọn số câu hỏi preset (chỉ hiện những số ≤ tổng từ khả dụng)
     questionSizeOptions() {
       return [5, 10, 20].filter(count => count <= this.availableWordCount);
     },
+    // Kiểm tra số câu hỏi nhập vào có hợp lệ không
     hasValidQuestionCount() {
       if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true;
-
       const enteredQuestionCount = Number(this.customQuestionCount);
       return Number.isFinite(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount;
     }
   },
   watch: {
+    // Nếu số từ khả dụng giảm → điều chỉnh customQuestionCount
     availableWordCount(newMax) {
-      if (Number(this.customQuestionCount) > newMax) this.customQuestionCount = newMax;
+      if (Number(this.customQuestionCount) > newMax) {
+        this.customQuestionCount = newMax;
+      }
     },
     customQuestionCount(newValue) {
       const enteredQuestionCount = Number(newValue);
-      if (!Number.isFinite(enteredQuestionCount)) this.customQuestionCount = Math.min(5, this.availableWordCount || 5);
+      if (!Number.isFinite(enteredQuestionCount)) {
+        this.customQuestionCount = Math.min(5, this.availableWordCount || 5);
+      }
     }
   },
+  // Khi mount: load words + categories, kiểm tra retake từ Dashboard
   async mounted() {
     try {
       this.words = await getWords();
@@ -198,11 +202,10 @@ export default {
           this.isSessionActive = true;
         }
       }
-    } catch (error) {
-      // Words failed to load
-    }
+    } catch (error) { /* không tải được dữ liệu */ }
   },
   methods: {
+    // Đảm bảo 2 ngôn ngữ hỏi/đáp không trùng nhau
     onQuestionLanguageChange() {
       if (this.questionLanguage === this.answerLanguage) {
         this.answerLanguage = this.questionLanguage === 'german' ? 'english' : 'german';
@@ -213,9 +216,9 @@ export default {
         this.questionLanguage = this.answerLanguage === 'german' ? 'english' : 'german';
       }
     },
+    // Khởi động quiz: chọn ngẫu nhiên số câu hỏi từ danh sách từ khả dụng
     startTest() {
       let questionLimit = this.availableWordCount;
-
       if (this.selectedWordSet !== 'category') {
         if (this.selectedQuestionCount === 'custom') {
           questionLimit = Number(this.customQuestionCount);
@@ -223,17 +226,18 @@ export default {
           questionLimit = Number(this.selectedQuestionCount);
         }
       }
-
-      if (!Number.isFinite(questionLimit) || questionLimit < 1) questionLimit = this.availableWordCount;
+      if (!Number.isFinite(questionLimit) || questionLimit < 1) {
+        questionLimit = this.availableWordCount;
+      }
       questionLimit = Math.min(questionLimit, this.availableWordCount);
 
       const randomWords = [...this.availableWords]
         .sort(() => 0.5 - Math.random())
         .slice(0, questionLimit);
-
       this.testWords = randomWords;
       this.isSessionActive = true;
     },
+    // Thoát quiz, quay về màn hình thiết lập
     exitTest() {
       this.isSessionActive = false;
       this.testWords = [];

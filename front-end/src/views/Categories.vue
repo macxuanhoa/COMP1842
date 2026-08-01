@@ -218,6 +218,8 @@
 </template>
 
 <script>
+// ── Trang quản lý Category ───────────────────────────────────────────
+// Tạo, sửa, xóa category. Có phân trang. Category "General" bị khóa.
 import {
   getWords,
   getCategories,
@@ -228,84 +230,82 @@ import {
 
 export default {
   name: 'categories',
-
   data() {
     return {
-      categories: [],
-      words: [],
-      newCategoryName: '',
-      editingCategoryId: '',
-      editingCategoryName: '',
-      currentPage: 1,
-      pageSize: 8
+      categories: [],          // danh sách tất cả category
+      words: [],               // danh sách tất cả words (để đếm số từ/category)
+      newCategoryName: '',     // tên category mới trong ô input
+      editingCategoryId: '',   // ID category đang được chỉnh sửa inline
+      editingCategoryName: '', // tên mới khi đang sửa inline
+      currentPage: 1,          // trang hiện tại
+      pageSize: 8              // số category mỗi trang
     };
   },
-
   computed: {
+    // Tổng số trang dựa trên số category và pageSize
     totalPages() {
       return Math.ceil(this.categories.length / this.pageSize) || 1;
     },
-
+    // Danh sách category hiển thị trên trang hiện tại
     visibleCategories() {
       const start = (this.currentPage - 1) * this.pageSize;
       return this.categories.slice(start, start + this.pageSize);
     },
-
+    // Chuỗi tóm tắt phân trang (vd: "Showing 1–8 of 15 categories")
     paginationSummary() {
       const total = this.categories.length;
-
       if (total === 0) return '0 categories';
-
       const start = (this.currentPage - 1) * this.pageSize + 1;
       const end = Math.min(this.currentPage * this.pageSize, total);
-
       return `Showing ${start}–${end} of ${total} categories`;
     }
   },
-
   watch: {
+    // Nếu xóa category làm giảm tổng số trang → lùi về trang cuối
     categories() {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;
       }
     }
   },
-
   mounted() {
     this.loadPageData();
   },
-
   methods: {
+    // Focus vào ô input tạo category mới
     focusNewCategoryInput() {
       this.$refs.newCategoryInput?.focus();
     },
-
+    // ── Phân trang ───────────────────────────────────────────────────
     nextPage() {
-      if (this.currentPage < this.totalPages) this.currentPage++;
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
     },
-
     prevPage() {
-      if (this.currentPage > 1) this.currentPage--;
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
     },
-
     goToPage(page) {
       this.currentPage = page;
     },
-
+    // Đếm số từ đang dùng 1 category (theo ObjectId)
     getWordsUsingCategory(categoryId) {
       return this.words.filter(
         word => String(word.category?._id || word.category) === String(categoryId)
       ).length;
     },
-
+    // Load categories + words từ API
     async loadPageData() {
       try {
-        const [cats, words] = await Promise.all([getCategories(), getWords()]);
-        this.categories = cats;
-        this.words = words;
-      } catch (err) { /* silent */ }
+        const [categoriesData, wordsData] = await Promise.all([getCategories(), getWords()]);
+        this.categories = categoriesData;
+        this.words = wordsData;
+      } catch (error) { /* không tải được */ }
     },
-
+    // ── CRUD Category ────────────────────────────────────────────────
+    // Tạo category mới
     async createNewCategory() {
       const name = this.newCategoryName.trim();
       if (!name) return this.flash('Category name is required.', 'error');
@@ -314,48 +314,51 @@ export default {
         this.flash('Category created!', 'success');
         this.newCategoryName = '';
         await this.loadPageData();
-        const index = this.categories.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
-        if (index !== -1) this.currentPage = Math.floor(index / this.pageSize) + 1;
-      } catch (err) {
-        this.flash(e?.response?.data?.message || 'Failed to create category.', 'error');
+        const index = this.categories.findIndex(category => category.name.toLowerCase() === name.toLowerCase());
+        if (index !== -1) {
+          this.currentPage = Math.floor(index / this.pageSize) + 1;
+        }
+      } catch (error) {
+        this.flash(error?.response?.data?.message || 'Failed to create category.', 'error');
       }
     },
-
+    // Bắt đầu chỉnh sửa inline 1 dòng
     startCategoryEdit(category) {
       if (category.name === 'General') return;
-
       this.editingCategoryId = category._id;
       this.editingCategoryName = category.name;
     },
-
+    // Hủy chỉnh sửa inline
     cancelCategoryEdit() {
       this.editingCategoryId = '';
       this.editingCategoryName = '';
     },
-
-    async saveCategoryEdit(catId) {
+    // Lưu tên category sau khi sửa inline
+    async saveCategoryEdit(categoryId) {
       const name = this.editingCategoryName.trim();
       if (!name) return this.flash('Category name is required.', 'error');
       try {
-        await updateCategory({ _id: catId, name });
+        await updateCategory({ _id: categoryId, name });
         this.flash('Category renamed!', 'success');
         this.cancelCategoryEdit();
         await this.loadPageData();
-      } catch (err) {
-        this.flash(err?.response?.data?.message || 'Failed to rename.', 'error');
+      } catch (error) {
+        this.flash(error?.response?.data?.message || 'Failed to rename.', 'error');
       }
     },
-
+    // Xóa category (chỉ khi không có từ nào dùng nó, và không phải General)
     async deleteCategoryItem(category) {
       if (category.name === 'General') return;
-      if (this.getWordsUsingCategory(category._id) > 0) return this.flash('Cannot delete a category with words.', 'error');
+      if (this.getWordsUsingCategory(category._id) > 0) {
+        return this.flash('Cannot delete a category with words.', 'error');
+      }
       if (!confirm(`Delete "${category.name}"?`)) return;
       try {
         await deleteCategory(category._id);
         this.flash('Category deleted.', 'success');
         await this.loadPageData();
-      } catch (err) {
-        this.flash(err?.response?.data?.message || 'Failed to delete.', 'error');
+      } catch (error) {
+        this.flash(error?.response?.data?.message || 'Failed to delete.', 'error');
       }
     }
   }

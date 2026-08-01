@@ -114,29 +114,32 @@
 </template>
 
 <script>
+// ── Trang chi tiết từ vựng ───────────────────────────────────────────
+// Xem đầy đủ thông tin 1 word: 3 ngôn ngữ, category, favourite, phát âm
 import { getWord, updateWord, deleteWord } from '../helpers/helpers';
 
 export default {
   name: 'show',
   data() {
     return {
-      word: null
+      word: null // dữ liệu word load từ API (null = đang load hoặc lỗi)
     };
   },
+  // Khi mount: gọi API lấy word theo ID từ URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
-    } catch (error) {
-      // Word failed to load
-    }
+    } catch (error) { /* không tìm thấy word */ }
   },
   methods: {
+    // Phát âm từ bằng Web Speech API (trình duyệt)
     speakWord(text, languageCode) {
       if (!text || !window.speechSynthesis) return;
       const speech = new SpeechSynthesisUtterance(text);
       speech.lang = languageCode;
       window.speechSynthesis.speak(speech);
     },
+    // Bật/tắt trạng thái yêu thích (favourite)
     async toggleFavourite() {
       if (!this.word) return;
       const nextFavouriteValue = !this.word.favourite;
@@ -151,10 +154,9 @@ export default {
         this.flash('Failed to update favourite status.', 'error');
       }
     },
+    // Xóa word sau khi xác nhận
     async deleteWordItem() {
-      if (!window.confirm('Are you sure you want to delete this word?')) {
-        return;
-      }
+      if (!window.confirm('Are you sure you want to delete this word?')) return;
       try {
         await deleteWord(this.word._id);
         this.flash('Word deleted successfully!', 'success');

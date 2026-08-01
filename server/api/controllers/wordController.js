@@ -7,8 +7,6 @@ const findDuplicateWord = async (german, english, french, excludeId) => {
   return Word.findOne(query);
 };
 
-// ── CRUD ─────────────────────────────────────────────────────────────
-
 exports.list_all_words = async (req, res) => {
   try {
     const words = await Word.find({})
@@ -40,8 +38,7 @@ exports.create_a_word = async (req, res) => {
 
 exports.read_a_word = async (req, res) => {
   try {
-    const word = await Word.findById(req.params.wordId)
-      .populate('category', 'name');
+    const word = await Word.findById(req.params.wordId).populate('category', 'name');
     if (!word) return res.status(404).json({ message: 'Word not found.' });
     res.json(word);
   } catch (error) {
@@ -63,7 +60,6 @@ exports.update_a_word = async (req, res) => {
     if (duplicate) return res.status(409).json({ message: 'This word already exists.' });
 
     Object.assign(word, req.body);
-
     const updatedWord = await word.save();
     await updatedWord.populate('category', 'name');
     res.json(updatedWord);

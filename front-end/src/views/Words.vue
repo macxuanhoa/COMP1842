@@ -298,6 +298,8 @@
 </template>
 
 <script>
+// ── Trang thư viện từ vựng ───────────────────────────────────────────
+// Hiển thị toàn bộ words dạng bảng, có tìm kiếm, lọc, sắp xếp, phân trang
 import {
   getWords,
   updateWord,
@@ -307,66 +309,65 @@ import {
 
 export default {
   name: 'words',
-
   data() {
     return {
-      words: [],
-      categories: [],
-      searchText: '',
-      selectedCategory: '',
-      selectedFavouriteFilter: 'all',
-      selectedSortOrder: 'newest',
-      currentPage: 1,
-      pageSize: 8
+      words: [],                   // tất cả words từ database
+      categories: [],              // tất cả categories (cho dropdown lọc)
+      searchText: '',              // ô tìm kiếm (lọc theo 3 ngôn ngữ)
+      selectedCategory: '',        // category đang lọc ('' = tất cả)
+      selectedFavouriteFilter: 'all', // 'all' | 'fav' | 'normal'
+      selectedSortOrder: 'newest', // 'newest' | 'oldest'
+      currentPage: 1,              // trang hiện tại
+      pageSize: 8                  // số từ mỗi trang
     };
   },
-
   watch: {
+    // Khi thay đổi filter → reset về trang 1
     searchText: 'resetPage',
     selectedCategory: 'resetPage',
     selectedFavouriteFilter: 'resetPage',
     selectedSortOrder: 'resetPage',
-
+    // Nếu filter làm giảm tổng số trang → lùi về trang cuối
     filteredWords() {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;
       }
     }
   },
-
   computed: {
+    // Lọc + sắp xếp words theo tất cả điều kiện
     filteredWords() {
       let filteredWords = [...this.words];
       const searchValue = this.searchText.trim().toLowerCase();
 
+      // Lọc theo từ khóa tìm kiếm (trong cả 3 ngôn ngữ)
       if (searchValue) {
         filteredWords = filteredWords.filter(word => {
           return ['german', 'english', 'french'].some(language => {
-            return (word[language] || '')
-              .toLowerCase()
-              .includes(searchValue);
+            return (word[language] || '').toLowerCase().includes(searchValue);
           });
         });
       }
 
+      // Lọc theo category
       if (this.selectedCategory) {
         filteredWords = filteredWords.filter(
           word => String(word.category?._id || word.category) === String(this.selectedCategory)
         );
       }
 
+      // Lọc theo trạng thái yêu thích
       if (this.selectedFavouriteFilter === 'fav') {
         filteredWords = filteredWords.filter(word => word.favourite);
       }
-
       if (this.selectedFavouriteFilter === 'normal') {
         filteredWords = filteredWords.filter(word => !word.favourite);
       }
 
+      // Sắp xếp theo ngày tạo
       filteredWords.sort((firstWord, secondWord) => {
         const firstDate = new Date(firstWord.created_date);
         const secondDate = new Date(secondWord.created_date);
-
         return this.selectedSortOrder === 'newest'
           ? secondDate - firstDate
           : firstDate - secondDate;
@@ -374,115 +375,86 @@ export default {
 
       return filteredWords;
     },
-
+    // ── Phân trang ───────────────────────────────────────────────────
     totalPages() {
       return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
     },
-
     visibleWords() {
       const start = (this.currentPage - 1) * this.pageSize;
       return this.filteredWords.slice(start, start + this.pageSize);
     },
-
     paginationSummary() {
       const total = this.filteredWords.length;
-
       if (total === 0) return '0 words';
-
       const start = (this.currentPage - 1) * this.pageSize + 1;
       const end = Math.min(this.currentPage * this.pageSize, total);
-
       return `Showing ${start}–${end} of ${total} words`;
     }
   },
-
   mounted() {
     this.loadPageData();
   },
-
   methods: {
+    // Reset về trang 1 (gọi khi filter thay đổi)
     resetPage() {
       this.currentPage = 1;
     },
-
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
-
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
     },
-
     goToPage(page) {
       this.currentPage = page;
     },
 
+    // Phát âm từ bằng Web Speech API
     speakWord(text, languageCode) {
       if (!text || !window.speechSynthesis) return;
-
       window.speechSynthesis.cancel();
-
       const speech = new SpeechSynthesisUtterance(text);
       speech.lang = languageCode;
-
       window.speechSynthesis.speak(speech);
     },
 
+    // Load words + categories từ API
     async loadPageData() {
       try {
         const [wordsData, categoriesData] = await Promise.all([getWords(), getCategories()]);
         this.words = wordsData;
         this.categories = categoriesData;
-      } catch (err) { /* silent */ }
+      } catch (error) { /* không tải được */ }
     },
 
+    // Bật/tắt trạng thái yêu thích
     async toggleFavourite(word) {
       const nextFavouriteValue = !word.favourite;
-
       try {
-        const updatedWord = await updateWord({
-          _id: word._id,
-          favourite: nextFavouriteValue
-        });
-
-        const wordIndex = this.words.findIndex(
-          savedWord => savedWord._id === word._id
-        );
-
+        const updatedWord = await updateWord({ _id: word._id, favourite: nextFavouriteValue });
+        const wordIndex = this.words.findIndex(savedWord => savedWord._id === word._id);
         if (wordIndex !== -1) {
           this.words.splice(wordIndex, 1, updatedWord);
         }
-
         this.flash(
-          nextFavouriteValue
-            ? 'Added to Favourites!'
-            : 'Removed from Favourites',
-          'success',
-          { timeout: 1000 }
+          nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites',
+          'success', { timeout: 1000 }
         );
       } catch (error) {
         this.flash('Failed to update favourite status.', 'error');
       }
     },
 
+    // Xóa word sau khi xác nhận
     async deleteWordItem(word) {
-      const confirmed = window.confirm(
-        'Are you sure you want to delete this word?'
-      );
-
-      if (!confirmed) return;
-
+      if (!window.confirm('Are you sure you want to delete this word?')) return;
       try {
         await deleteWord(word._id);
-
-        this.words = this.words.filter(
-          savedWord => savedWord._id !== word._id
-        );
-
+        this.words = this.words.filter(savedWord => savedWord._id !== word._id);
         this.flash('Word deleted successfully!', 'success');
       } catch (error) {
         this.flash('Failed to delete the word.', 'error');

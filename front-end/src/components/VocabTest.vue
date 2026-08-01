@@ -126,37 +126,28 @@
 </template>
 
 <script>
+// ── Component quiz từ vựng ───────────────────────────────────────────
+// Nhận danh sách words và 2 ngôn ngữ (hỏi/đáp), tổ chức quiz và chấm điểm
 export default {
   name: 'vocab-test',
   props: {
-    words: {
-      type: Array,
-      required: true
-    },
-    questionLanguage: {
-      type: String,
-      default: 'german'
-    },
-    answerLanguage: {
-      type: String,
-      default: 'english'
-    }
+    words: { type: Array, required: true },            // danh sách từ để test
+    questionLanguage: { type: String, default: 'german' }, // ngôn ngữ câu hỏi
+    answerLanguage: { type: String, default: 'english' }   // ngôn ngữ câu trả lời
   },
   data() {
     return {
-      randomizedWords: [...this.words].sort(
-        () => 0.5 - Math.random()
-      ),
-      wrongAnswers: [],
-      userAnswer: '',
-      score: 0,
-      answeredCount: 0,
-      totalQuestions: this.words.length,
-      testOver: false,
-      feedback: null,
-      lastCorrectAnswer: '',
-      waitingNext: false,
-      languageDetails: {
+      randomizedWords: [...this.words].sort(() => 0.5 - Math.random()), // xáo trộn thứ tự từ
+      wrongAnswers: [],     // danh sách câu trả lời sai (để review cuối)
+      userAnswer: '',       // câu trả lời hiện tại của user
+      score: 0,             // số câu đúng
+      answeredCount: 0,     // số câu đã trả lời
+      totalQuestions: this.words.length, // tổng số câu hỏi
+      testOver: false,      // bài test đã kết thúc chưa
+      feedback: null,       // 'correct' hoặc 'wrong' (null = chưa trả lời)
+      lastCorrectAnswer: '',// đáp án đúng của câu vừa làm (hiển thị khi sai)
+      waitingNext: false,   // đang chờ user nhấn "Next Question"
+      languageDetails: {    // metadata cờ + tên cho 3 ngôn ngữ
         german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
         english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
         french:  { name: 'French',  code: 'FR', flag: 'france flag' }
@@ -179,13 +170,15 @@ export default {
     feedbackIcon() {
       return this.feedback === 'correct' ? 'check circle icon' : 'times circle icon';
     },
+    // Lấy thông tin hiển thị cho ngôn ngữ câu hỏi và câu trả lời
     questionLanguageName() { return this.languageDetails[this.questionLanguage].name; },
-    answerLanguageName() { return this.languageDetails[this.answerLanguage].name; },
+    answerLanguageName()   { return this.languageDetails[this.answerLanguage].name; },
     questionLanguageCode() { return this.languageDetails[this.questionLanguage].code; },
-    answerLanguageCode() { return this.languageDetails[this.answerLanguage].code; },
+    answerLanguageCode()   { return this.languageDetails[this.answerLanguage].code; },
     questionLanguageFlag() { return this.languageDetails[this.questionLanguage].flag; },
-    answerLanguageFlag() { return this.languageDetails[this.answerLanguage].flag; }
+    answerLanguageFlag()   { return this.languageDetails[this.answerLanguage].flag; }
   },
+  // Khi mount: tự động focus vào ô nhập câu trả lời
   mounted() {
     this.$nextTick(() => {
       if (this.$refs.answerInput) {
@@ -194,11 +187,11 @@ export default {
     });
   },
   methods: {
+    // Kiểm tra câu trả lời (so sánh không phân biệt hoa/thường, bỏ khoảng trắng)
     submitAnswer() {
-      const correctVal = this.currentWord[this.answerLanguage].trim().toLowerCase();
-      const userVal = this.userAnswer.trim().toLowerCase();
-
-      const isCorrect = correctVal === userVal;
+      const correctValue = this.currentWord[this.answerLanguage].trim().toLowerCase();
+      const userValue = this.userAnswer.trim().toLowerCase();
+      const isCorrect = correctValue === userValue;
       this.lastCorrectAnswer = this.currentWord[this.answerLanguage];
 
       if (isCorrect) {
@@ -206,14 +199,11 @@ export default {
         this.score += 1;
       } else {
         this.feedback = 'wrong';
-        this.wrongAnswers.push({
-          word: this.currentWord,
-          guess: this.userAnswer
-        });
+        this.wrongAnswers.push({ word: this.currentWord, guess: this.userAnswer });
       }
-
       this.waitingNext = true;
     },
+    // Lưu kết quả quiz vào localStorage (giữ tối đa 50 lần gần nhất)
     saveResult() {
       const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
       history.unshift({
@@ -222,9 +212,12 @@ export default {
         timestamp: new Date().toISOString(),
         wordIds: this.words.map(word => word._id)
       });
-      if (history.length > 50) history.pop();
+      if (history.length > 50) {
+        history.pop();
+      }
       localStorage.setItem('coursework03_quiz_history', JSON.stringify(history));
     },
+    // Chuyển sang câu hỏi tiếp theo (hoặc kết thúc nếu hết câu)
     nextQuestion() {
       this.answeredCount += 1;
       this.feedback = null;

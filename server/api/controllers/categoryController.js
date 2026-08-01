@@ -1,8 +1,6 @@
 const Category = require('../models/categoryModel');
 const Word = require('../models/wordModel');
 
-// ── CRUD ─────────────────────────────────────────────────────────────
-
 exports.list_all_categories = async (req, res) => {
   try {
     const categories = await Category.find({});

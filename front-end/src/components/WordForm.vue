@@ -151,9 +151,9 @@ export default {
         }
 
         try {
-          const newCat = await createCategory({ name });
-          this.categories.push(newCat);        // thêm category mới vào dropdown
-          categoryId = newCat._id;              // dùng ID mới cho word
+          const newCategory = await createCategory({ name });
+          this.categories.push(newCategory);        // thêm category mới vào dropdown
+          categoryId = newCategory._id;              // dùng ID mới cho word
           this.isAddingCategory = false;        // tắt chế độ tạo mới
           this.newCategoryName = '';
         } catch (error) {
