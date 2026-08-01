@@ -101,7 +101,7 @@
                   <div v-else class="category-name-cell">
                     <strong>{{ category.name }}</strong>
                     <span
-                      v-if="category.isDefault"
+                      v-if="category.name === 'General'"
                       class="ui label mini basic category-default-label"
                       title="Protected default category"
                     >
@@ -141,7 +141,7 @@
                   </div>
 
                   <!-- Không ở chế độ sửa và không bị khóa -->
-                  <div v-else-if="!category.isDefault" class="library-row-actions">
+                  <div v-else-if="category.name !== 'General'" class="library-row-actions">
                     <button
                       type="button"
                       class="ui icon mini basic primary button"
@@ -298,65 +298,31 @@ export default {
       ).length;
     },
 
-    getCategoryNameError(categoryName) {
-      if (!categoryName) return 'Category name is required.';
-      return '';
-    },
-
-    getApiError(error, defaultMessage) {
-      return error?.response?.data?.message || defaultMessage;
-    },
-
     async loadPageData() {
       try {
-        const [categories, words] = await Promise.all([
-          getCategories(),
-          getWords()
-        ]);
-
-        this.categories = Array.isArray(categories) ? categories : [];
-        this.words = Array.isArray(words) ? words : [];
-      } catch (error) {
-        // Failed to load page data
-      }
+        const [cats, words] = await Promise.all([getCategories(), getWords()]);
+        this.categories = cats;
+        this.words = words;
+      } catch (err) { /* silent */ }
     },
 
     async createNewCategory() {
-      const categoryName = this.newCategoryName.trim();
-      const errorMessage = this.getCategoryNameError(categoryName);
-
-      if (errorMessage) {
-        this.flash(errorMessage, 'error');
-        return;
-      }
-
+      const name = this.newCategoryName.trim();
+      if (!name) return this.flash('Category name is required.', 'error');
       try {
-        await createCategory({ name: categoryName });
-
-        this.flash('Category created successfully!', 'success');
+        await createCategory({ name });
+        this.flash('Category created!', 'success');
         this.newCategoryName = '';
-
         await this.loadPageData();
-
-        const createdCategoryIndex = this.categories.findIndex(
-          category =>
-            category.name.toLowerCase() === categoryName.toLowerCase()
-        );
-
-        if (createdCategoryIndex !== -1) {
-          this.currentPage =
-            Math.floor(createdCategoryIndex / this.pageSize) + 1;
-        }
-      } catch (error) {
-        this.flash(
-          this.getApiError(error, 'Failed to create category.'),
-          'error'
-        );
+        const index = this.categories.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
+        if (index !== -1) this.currentPage = Math.floor(index / this.pageSize) + 1;
+      } catch (err) {
+        this.flash(e?.response?.data?.message || 'Failed to create category.', 'error');
       }
     },
 
     startCategoryEdit(category) {
-      if (category.isDefault) return;
+      if (category.name === 'General') return;
 
       this.editingCategoryId = category._id;
       this.editingCategoryName = category.name;
@@ -367,61 +333,29 @@ export default {
       this.editingCategoryName = '';
     },
 
-    async saveCategoryEdit(categoryId) {
-      const categoryName = this.editingCategoryName.trim();
-
-      const errorMessage = this.getCategoryNameError(categoryName);
-
-      if (errorMessage) {
-        this.flash(errorMessage, 'error');
-        return;
-      }
-
+    async saveCategoryEdit(catId) {
+      const name = this.editingCategoryName.trim();
+      if (!name) return this.flash('Category name is required.', 'error');
       try {
-        await updateCategory({
-          _id: categoryId,
-          name: categoryName
-        });
-
-        this.flash('Category renamed successfully!', 'success');
+        await updateCategory({ _id: catId, name });
+        this.flash('Category renamed!', 'success');
         this.cancelCategoryEdit();
-
         await this.loadPageData();
-      } catch (error) {
-        this.flash(
-          this.getApiError(error, 'Failed to update category.'),
-          'error'
-        );
+      } catch (err) {
+        this.flash(err?.response?.data?.message || 'Failed to rename.', 'error');
       }
     },
 
     async deleteCategoryItem(category) {
-      if (category.isDefault) return;
-
-      if (this.getWordsUsingCategory(category._id) > 0) {
-        this.flash(
-          'Cannot delete a category that has words assigned.',
-          'error'
-        );
-        return;
-      }
-
-      const confirmed = window.confirm(
-        `Are you sure you want to delete the category "${category.name}"?`
-      );
-
-      if (!confirmed) return;
-
+      if (category.name === 'General') return;
+      if (this.getWordsUsingCategory(category._id) > 0) return this.flash('Cannot delete a category with words.', 'error');
+      if (!confirm(`Delete "${category.name}"?`)) return;
       try {
         await deleteCategory(category._id);
-
-        this.flash('Category deleted successfully.', 'success');
+        this.flash('Category deleted.', 'success');
         await this.loadPageData();
-      } catch (error) {
-        this.flash(
-          this.getApiError(error, 'Failed to delete category.'),
-          'error'
-        );
+      } catch (err) {
+        this.flash(err?.response?.data?.message || 'Failed to delete.', 'error');
       }
     }
   }

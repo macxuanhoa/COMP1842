@@ -62,8 +62,8 @@
             <label>Category</label>
             <select class="ui dropdown fluid" v-model="selectedCategory">
               <option value="">Choose a category…</option>
-              <option v-for="cat in categories" :key="cat._id" :value="cat._id">
-                {{ cat.name }} ({{ words.filter(word => String(word.category?._id || word.category) === String(cat._id)).length }} words)
+              <option v-for="category in categories" :key="category._id" :value="category._id">
+                {{ category.name }} ({{ words.filter(word => String(word.category?._id || word.category) === String(category._id)).length }} words)
               </option>
             </select>
           </div>

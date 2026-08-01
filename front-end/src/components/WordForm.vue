@@ -36,12 +36,12 @@
         <select class="ui fluid dropdown" v-model="selectedCategoryId" :disabled="isAddingCategory">
           <option value="">General (default)</option>
           <option
-            v-for="cat in categories"
-            :key="cat._id"
-            v-if="!cat.isDefault"
-            :value="cat._id"
+            v-for="category in categories"
+            :key="category._id"
+            v-if="category.name !== 'General'"
+            :value="category._id"
           >
-            {{ cat.name }}
+            {{ category.name }}
           </option>
         </select>
         <button class="ui basic button word-form-category-button" type="button" @click="toggleCategoryInput">

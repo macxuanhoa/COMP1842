@@ -64,7 +64,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(attempt, idx) in quizHistory.slice(0, 5)" :key="idx">
+          <tr v-for="(attempt, index) in quizHistory.slice(0, 5)" :key="index">
             <td>{{ formatDateTime(attempt.timestamp) }}</td>
             <td class="center aligned">
               {{ attempt.score }} / {{ attempt.total }}

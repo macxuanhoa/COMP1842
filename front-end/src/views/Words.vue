@@ -49,11 +49,11 @@
               <option value="">All Categories</option>
 
               <option
-                v-for="cat in categories"
-                :key="cat._id"
-                :value="cat._id"
+                v-for="category in categories"
+                :key="category._id"
+                :value="category._id"
               >
-                {{ cat.name }}
+                {{ category.name }}
               </option>
             </select>
           </div>
@@ -433,28 +433,11 @@ export default {
     },
 
     async loadPageData() {
-      await Promise.all([
-        this.loadWords(),
-        this.loadCategories()
-      ]);
-    },
-
-    async loadWords() {
       try {
-        const wordData = await getWords();
-        this.words = Array.isArray(wordData) ? wordData : [];
-      } catch (error) {
-        // Words failed to load
-      }
-    },
-
-    async loadCategories() {
-      try {
-        const categoryData = await getCategories();
-        this.categories = Array.isArray(categoryData) ? categoryData : [];
-      } catch (error) {
-        // Categories failed to load
-      }
+        const [wordsData, categoriesData] = await Promise.all([getWords(), getCategories()]);
+        this.words = wordsData;
+        this.categories = categoriesData;
+      } catch (err) { /* silent */ }
     },
 
     async toggleFavourite(word) {

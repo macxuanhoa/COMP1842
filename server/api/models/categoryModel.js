@@ -8,10 +8,6 @@ const CategorySchema = new Schema({
     trim: true,
     minlength: 2,
     maxlength: 40
-  },
-  isDefault: {
-    type: Boolean,
-    default: false
   }
 });
 

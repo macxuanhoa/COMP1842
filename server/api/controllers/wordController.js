@@ -12,7 +12,7 @@ const findDuplicateWord = async (german, english, french, excludeId) => {
 exports.list_all_words = async (req, res) => {
   try {
     const words = await Word.find({})
-      .populate('category', 'name isDefault')
+      .populate('category', 'name')
       .sort({ created_date: -1 });
     res.json(words);
   } catch (error) {
@@ -22,20 +22,16 @@ exports.list_all_words = async (req, res) => {
 
 exports.create_a_word = async (req, res) => {
   try {
-    const { german, english, french, category } = req.body;
-
-    // use default category if none provided
-    if (!category) {
-      const defaultCat = await Category.findOne({ isDefault: true });
-      if (!defaultCat) return res.status(500).json({ message: 'No default category configured.' });
-      req.body.category = defaultCat._id;
+    if (!req.body.category) {
+      const general = await Category.findOne({ name: 'General' });
+      if (general) req.body.category = general._id;
     }
 
-    const duplicate = await findDuplicateWord(german, english, french);
+    const duplicate = await findDuplicateWord(req.body.german, req.body.english, req.body.french);
     if (duplicate) return res.status(409).json({ message: 'This word already exists.' });
 
     const word = await new Word(req.body).save();
-    await word.populate('category', 'name isDefault');
+    await word.populate('category', 'name');
     res.status(201).json(word);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -45,7 +41,7 @@ exports.create_a_word = async (req, res) => {
 exports.read_a_word = async (req, res) => {
   try {
     const word = await Word.findById(req.params.wordId)
-      .populate('category', 'name isDefault');
+      .populate('category', 'name');
     if (!word) return res.status(404).json({ message: 'Word not found.' });
     res.json(word);
   } catch (error) {
@@ -66,14 +62,10 @@ exports.update_a_word = async (req, res) => {
     );
     if (duplicate) return res.status(409).json({ message: 'This word already exists.' });
 
-    if (req.body.german) word.german = req.body.german;
-    if (req.body.english) word.english = req.body.english;
-    if (req.body.french) word.french = req.body.french;
-    if (req.body.category) word.category = req.body.category;
-    if (req.body.favourite !== undefined) word.favourite = req.body.favourite;
+    Object.assign(word, req.body);
 
     const updatedWord = await word.save();
-    await updatedWord.populate('category', 'name isDefault');
+    await updatedWord.populate('category', 'name');
     res.json(updatedWord);
   } catch (error) {
     res.status(400).json({ message: error.message });
