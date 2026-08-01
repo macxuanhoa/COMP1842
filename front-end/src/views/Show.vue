@@ -26,7 +26,7 @@
           <div>
             <span class="ui basic label word-detail-category">
               <i class="tag icon"></i>
-              {{ word.category || 'General' }}
+              {{ word.category?.name || '\u2014' }}
             </span>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default {
     try {
       this.word = await getWord(this.$route.params.id);
     } catch (error) {
-      console.error(error);
+      // Word failed to load
     }
   },
   methods: {
@@ -141,11 +141,13 @@ export default {
       if (!this.word) return;
       const nextFavouriteValue = !this.word.favourite;
       try {
-        const updatedWord = await updateWord({ ...this.word, favourite: nextFavouriteValue });
+        const updatedWord = await updateWord({
+          _id: this.word._id,
+          favourite: nextFavouriteValue
+        });
         this.word = updatedWord;
         this.flash(nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
       } catch (error) {
-        console.error(error);
         this.flash('Failed to update favourite status.', 'error');
       }
     },
@@ -158,7 +160,6 @@ export default {
         this.flash('Word deleted successfully!', 'success');
         this.$router.push('/words');
       } catch (error) {
-        console.error(error);
         this.flash('Failed to delete the word.', 'error');
       }
     }

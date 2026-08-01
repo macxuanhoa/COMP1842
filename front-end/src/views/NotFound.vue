@@ -21,7 +21,6 @@
 
 <script>
 export default {
-  // Trang dự phòng khi URL không khớp route nào.
   name: 'not-found'
 };
 </script>

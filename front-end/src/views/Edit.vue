@@ -51,7 +51,6 @@ export default {
     try {
       this.word = await getWord(this.$route.params.id);
     } catch (error) {
-      console.error(error);
       this.flash('Failed to load word details.', 'error');
     }
   },

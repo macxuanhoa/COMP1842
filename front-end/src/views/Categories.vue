@@ -101,7 +101,7 @@
                   <div v-else class="category-name-cell">
                     <strong>{{ category.name }}</strong>
                     <span
-                      v-if="isGeneral(category.name)"
+                      v-if="category.isDefault"
                       class="ui label mini basic category-default-label"
                       title="Protected default category"
                     >
@@ -114,7 +114,7 @@
                 <td class="center aligned">
                   <span class="ui label mini basic category-count">
                     <i class="layer group icon"></i>
-                    {{ getWordsUsingCategory(category.name) }} {{ getWordsUsingCategory(category.name) === 1 ? 'word' : 'words' }}
+                    {{ getWordsUsingCategory(category._id) }} {{ getWordsUsingCategory(category._id) === 1 ? 'word' : 'words' }}
                   </span>
                 </td>
 
@@ -141,7 +141,7 @@
                   </div>
 
                   <!-- Không ở chế độ sửa và không bị khóa -->
-                  <div v-else-if="!isGeneral(category.name)" class="library-row-actions">
+                  <div v-else-if="!category.isDefault" class="library-row-actions">
                     <button
                       type="button"
                       class="ui icon mini basic primary button"
@@ -276,14 +276,6 @@ export default {
   },
 
   methods: {
-    normalizeName(name) {
-      return (name || '').trim().toLowerCase();
-    },
-
-    isGeneral(name) {
-      return this.normalizeName(name) === 'general';
-    },
-
     focusNewCategoryInput() {
       this.$refs.newCategoryInput?.focus();
     },
@@ -300,42 +292,14 @@ export default {
       this.currentPage = page;
     },
 
-    getWordsUsingCategory(categoryName) {
-      const normalizedCategory = this.normalizeName(categoryName);
-
+    getWordsUsingCategory(categoryId) {
       return this.words.filter(
-        word => this.normalizeName(word.category) === normalizedCategory
+        word => String(word.category?._id || word.category) === String(categoryId)
       ).length;
     },
 
-    getCategoryNameError(categoryName, ignoredCategoryId = '') {
-      if (!categoryName) {
-        return 'Category name is required.';
-      }
-
-      if (categoryName.length < 2) {
-        return 'Category name must be at least 2 characters.';
-      }
-
-      if (categoryName.length > 40) {
-        return 'Category name cannot exceed 40 characters.';
-      }
-
-      if (this.isGeneral(categoryName)) {
-        return 'General is a protected category.';
-      }
-
-      const categoryExists = this.categories.some(category => {
-        return (
-          category._id !== ignoredCategoryId &&
-          this.normalizeName(category.name) === this.normalizeName(categoryName)
-        );
-      });
-
-      if (categoryExists) {
-        return 'Category already exists.';
-      }
-
+    getCategoryNameError(categoryName) {
+      if (!categoryName) return 'Category name is required.';
       return '';
     },
 
@@ -353,7 +317,7 @@ export default {
         this.categories = Array.isArray(categories) ? categories : [];
         this.words = Array.isArray(words) ? words : [];
       } catch (error) {
-        console.error('Failed to load categories data', error);
+        // Failed to load page data
       }
     },
 
@@ -376,8 +340,7 @@ export default {
 
         const createdCategoryIndex = this.categories.findIndex(
           category =>
-            this.normalizeName(category.name) ===
-            this.normalizeName(categoryName)
+            category.name.toLowerCase() === categoryName.toLowerCase()
         );
 
         if (createdCategoryIndex !== -1) {
@@ -393,7 +356,7 @@ export default {
     },
 
     startCategoryEdit(category) {
-      if (this.isGeneral(category.name)) return;
+      if (category.isDefault) return;
 
       this.editingCategoryId = category._id;
       this.editingCategoryName = category.name;
@@ -407,10 +370,7 @@ export default {
     async saveCategoryEdit(categoryId) {
       const categoryName = this.editingCategoryName.trim();
 
-      const errorMessage = this.getCategoryNameError(
-        categoryName,
-        categoryId
-      );
+      const errorMessage = this.getCategoryNameError(categoryName);
 
       if (errorMessage) {
         this.flash(errorMessage, 'error');
@@ -436,9 +396,9 @@ export default {
     },
 
     async deleteCategoryItem(category) {
-      if (this.isGeneral(category.name)) return;
+      if (category.isDefault) return;
 
-      if (this.getWordsUsingCategory(category.name) > 0) {
+      if (this.getWordsUsingCategory(category._id) > 0) {
         this.flash(
           'Cannot delete a category that has words assigned.',
           'error'

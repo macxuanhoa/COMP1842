@@ -33,8 +33,16 @@
     <div class="field">
       <label>Category</label>
       <div class="word-form-category-row">
-        <select class="ui fluid dropdown" v-model="word.category" :disabled="isAddingCategory">
-          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+        <select class="ui fluid dropdown" v-model="selectedCategoryId" :disabled="isAddingCategory">
+          <option value="">General (default)</option>
+          <option
+            v-for="cat in categories"
+            :key="cat._id"
+            v-if="!cat.isDefault"
+            :value="cat._id"
+          >
+            {{ cat.name }}
+          </option>
         </select>
         <button class="ui basic button word-form-category-button" type="button" @click="toggleCategoryInput">
           {{ isAddingCategory ? 'Use Existing' : 'New Category' }}
@@ -63,7 +71,7 @@
     </div>
 
     <div class="word-form-actions">
-      <button class="ui primary button icon labeled" type="submit">
+      <button class="ui primary button icon labeled" type="submit" :disabled="submitting">
         <i class="save icon"></i> Save word
       </button>
     </div>
@@ -71,43 +79,46 @@
 </template>
 
 <script>
-import { getCategoryNames } from '../helpers/helpers';
+import { getCategories, createCategory } from '../helpers/helpers';
 
 export default {
   name: 'WordForm',
   props: {
+    // Dữ liệu word được truyền từ component cha (New.vue hoặc Edit.vue)
     word: {
       type: Object,
       default: () => ({
-        german: '',
-        english: '',
-        french: '',
-        category: 'General',
-        favourite: false
+        german: '',   // từ tiếng Đức
+        english: '',  // từ tiếng Anh
+        french: '',   // từ tiếng Pháp
+        category: '', // ID của category (rỗng = dùng mặc định)
+        favourite: false // đánh dấu yêu thích
       })
     }
   },
   data() {
     return {
-      categories: [],
-      errorMessage: '',
-      isAddingCategory: false,
-      newCategoryName: ''
+      categories: [],          // danh sách category từ database
+      selectedCategoryId: '',  // ID category đang được chọn trong dropdown
+      errorMessage: '',        // thông báo lỗi hiển thị trên form
+      isAddingCategory: false, // đang ở chế độ tạo category mới
+      newCategoryName: '',     // tên category mới khi đang tạo
+      submitting: false        // đang gửi request (disable nút Save)
     };
   },
+  // Khi component được mount: tải danh sách category và set category hiện tại
   async mounted() {
     try {
-      this.categories = await getCategoryNames();
-      const currentCategory = (this.word.category || 'General').trim() || 'General';
-      if (!this.categories.includes(currentCategory)) {
-        this.isAddingCategory = true;
-        this.newCategoryName = currentCategory;
+      this.categories = await getCategories();
+      // Edit mode: word.category là object đã populate -> lấy _id
+      if (this.word.category && typeof this.word.category === 'object') {
+        this.selectedCategoryId = this.word.category._id || '';
       }
-    } catch (error) {
-      console.error(error);
-    }
+      // Create mode: selectedCategoryId = '' -> chọn "General (default)"
+    } catch (error) { /* không tải được */ }
   },
   methods: {
+    // Bật/tắt chế độ tạo category mới ngay trong form
     toggleCategoryInput() {
       this.isAddingCategory = !this.isAddingCategory;
       this.errorMessage = '';
@@ -116,35 +127,52 @@ export default {
         this.newCategoryName = '';
       }
     },
-    onSubmit() {
+    // Xử lý khi người dùng nhấn Save: validate -> tạo category mới (nếu cần) -> emit dữ liệu
+    async onSubmit() {
+      // Validate: cả 3 ngôn ngữ phải được nhập
       if (!this.word.german || !this.word.english || !this.word.french) {
         this.errorMessage = 'Please fill in all required fields.';
         return;
       }
 
-      let category = this.word.category || 'General';
+      this.submitting = true;
+      this.errorMessage = '';
 
+      let categoryId = this.selectedCategoryId || '';
+
+      // Nếu đang tạo category mới: gọi API tạo category trước
       if (this.isAddingCategory) {
-        category = this.newCategoryName.trim();
+        const name = this.newCategoryName.trim();
 
-        if (!category) {
+        if (!name) {
           this.errorMessage = 'Please enter a category name.';
+          this.submitting = false;
           return;
         }
 
-        if (category.length < 2) {
-          this.errorMessage = 'Category name must be at least 2 characters.';
-          return;
-        }
-
-        if (category.length > 40) {
-          this.errorMessage = 'Category name cannot exceed 40 characters.';
+        try {
+          const newCat = await createCategory({ name });
+          this.categories.push(newCat);        // thêm category mới vào dropdown
+          categoryId = newCat._id;              // dùng ID mới cho word
+          this.isAddingCategory = false;        // tắt chế độ tạo mới
+          this.newCategoryName = '';
+        } catch (error) {
+          this.errorMessage = error?.response?.data?.message || 'Failed to create category.';
+          this.submitting = false;
           return;
         }
       }
 
-      this.errorMessage = '';
-      this.$emit('createOrUpdate', { ...this.word, category });
+      // Gửi dữ liệu word lên component cha (New.vue hoặc Edit.vue)
+      this.$emit('createOrUpdate', {
+        german: this.word.german,
+        english: this.word.english,
+        french: this.word.french,
+        category: categoryId,
+        favourite: this.word.favourite,
+        _id: this.word._id
+      });
+      this.submitting = false;
     }
   }
 };

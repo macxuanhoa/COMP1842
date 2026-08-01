@@ -49,11 +49,11 @@
               <option value="">All Categories</option>
 
               <option
-                v-for="categoryName in categories"
-                :key="categoryName"
-                :value="categoryName"
+                v-for="cat in categories"
+                :key="cat._id"
+                :value="cat._id"
               >
-                {{ categoryName }}
+                {{ cat.name }}
               </option>
             </select>
           </div>
@@ -81,7 +81,7 @@
     </section>
 
     <section class="ui segment library-panel">
-      <div class="library-panel-heading library-panel-heading-table">
+      <div class="library-panel-heading">
         <div>
           <h2>Vocabulary entries</h2>
 
@@ -213,10 +213,10 @@
                 <td>
                   <span
                     class="ui label mini basic category-label"
-                    :title="word.category || 'General'"
+                    :title="word.category?.name || ''"
                   >
                     <i class="tag icon"></i>
-                    <span>{{ word.category || 'General' }}</span>
+                    <span>{{ word.category?.name || '\u2014' }}</span>
                   </span>
                 </td>
 
@@ -302,7 +302,7 @@ import {
   getWords,
   updateWord,
   deleteWord,
-  getCategoryNames
+  getCategories
 } from '../helpers/helpers';
 
 export default {
@@ -311,7 +311,7 @@ export default {
   data() {
     return {
       words: [],
-      categories: ['General'],
+      categories: [],
       searchText: '',
       selectedCategory: '',
       selectedFavouriteFilter: 'all',
@@ -351,7 +351,7 @@ export default {
 
       if (this.selectedCategory) {
         filteredWords = filteredWords.filter(
-          word => word.category === this.selectedCategory
+          word => String(word.category?._id || word.category) === String(this.selectedCategory)
         );
       }
 
@@ -444,19 +444,16 @@ export default {
         const wordData = await getWords();
         this.words = Array.isArray(wordData) ? wordData : [];
       } catch (error) {
-        console.error('Failed to load words:', error);
+        // Words failed to load
       }
     },
 
     async loadCategories() {
       try {
-        const categoryNames = await getCategoryNames();
-
-        this.categories = Array.isArray(categoryNames)
-          ? categoryNames
-          : ['General'];
+        const categoryData = await getCategories();
+        this.categories = Array.isArray(categoryData) ? categoryData : [];
       } catch (error) {
-        console.error('Failed to load categories:', error);
+        // Categories failed to load
       }
     },
 
@@ -465,7 +462,7 @@ export default {
 
       try {
         const updatedWord = await updateWord({
-          ...word,
+          _id: word._id,
           favourite: nextFavouriteValue
         });
 
@@ -485,7 +482,6 @@ export default {
           { timeout: 1000 }
         );
       } catch (error) {
-        console.error(error);
         this.flash('Failed to update favourite status.', 'error');
       }
     },
@@ -506,7 +502,6 @@ export default {
 
         this.flash('Word deleted successfully!', 'success');
       } catch (error) {
-        console.error(error);
         this.flash('Failed to delete the word.', 'error');
       }
     }
@@ -702,10 +697,6 @@ export default {
 .library-row-actions .ui.button {
   margin: 0;
   padding: 0.55rem 0.6rem !important;
-}
-
-.library-empty-actions .ui.button {
-  margin: 0;
 }
 
 .library-pagination {

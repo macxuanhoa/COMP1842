@@ -11,10 +11,6 @@ export const updateWord = (word) => apiClient.put(`/words/${word._id}`, word).th
 export const deleteWord = (id) => apiClient.delete(`/words/${id}`).then(response => response.data);
 
 export const getCategories = () => apiClient.get('/categories').then(response => response.data);
-export const getCategoryNames = async () => {
-  const categories = await getCategories();
-  return categories.map(category => category.name);
-};
 export const createCategory = (category) => apiClient.post('/categories', category).then(response => response.data);
 export const updateCategory = (category) => apiClient.put(`/categories/${category._id}`, category).then(response => response.data);
 export const deleteCategory = (id) => apiClient.delete(`/categories/${id}`).then(response => response.data);

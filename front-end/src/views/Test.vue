@@ -62,8 +62,8 @@
             <label>Category</label>
             <select class="ui dropdown fluid" v-model="selectedCategory">
               <option value="">Choose a category…</option>
-              <option v-for="categoryName in categories" :key="categoryName" :value="categoryName">
-                {{ categoryName }} ({{ words.filter(word => word.category === categoryName).length }} words)
+              <option v-for="cat in categories" :key="cat._id" :value="cat._id">
+                {{ cat.name }} ({{ words.filter(word => String(word.category?._id || word.category) === String(cat._id)).length }} words)
               </option>
             </select>
           </div>
@@ -120,7 +120,7 @@
 </template>
 
 <script>
-import { getWords, getCategoryNames } from '../helpers/helpers';
+import { getWords, getCategories } from '../helpers/helpers';
 import VocabTest from '../components/VocabTest.vue';
 
 export default {
@@ -130,21 +130,20 @@ export default {
   },
   data() {
     return {
-      words: [], // Danh sách từ.
-      categories: [], // Danh sách category.
-      questionLanguage: 'german', // Ngôn ngữ hỏi.
-      answerLanguage: 'english', // Ngôn ngữ đáp án.
-      selectedWordSet: 'all', // Kiểu chọn bộ từ.
-      selectedCategory: '', // Category đang chọn.
-      selectedQuestionCount: 'all', // Số câu hỏi.
-      customQuestionCount: 5, // Số câu tự nhập.
-      isSessionActive: false, // Trạng thái làm bài.
-      testWords: [] // Bộ từ của phiên test.
+      words: [],
+      categories: [],
+      questionLanguage: 'german',
+      answerLanguage: 'english',
+      selectedWordSet: 'all',
+      selectedCategory: '',
+      selectedQuestionCount: 'all',
+      customQuestionCount: 5,
+      isSessionActive: false,
+      testWords: []
     };
   },
   computed: {
     favouriteWordCount() {
-      // Dùng `this.words` để đếm nhanh số từ favourite và hiển thị cạnh option "Favourites only".
       return this.words.filter(word => word.favourite).length;
     },
     availableWords() {
@@ -156,36 +155,30 @@ export default {
         if (!this.selectedCategory) return [];
 
         return this.words.filter(
-          word => word.category === this.selectedCategory
+          word => String(word.category?._id || word.category) === String(this.selectedCategory)
         );
       }
 
       return this.words;
     },
     availableWordCount() {
-      // Lấy độ dài của `availableWords` để biết hiện tại có bao nhiêu từ khả dụng cho bài test.
       return this.availableWords.length;
     },
     questionSizeOptions() {
-      // Lọc các mốc 5, 10, 20 theo `availableWordCount` để dropdown chỉ hiện option hợp lệ.
       return [5, 10, 20].filter(count => count <= this.availableWordCount);
     },
     hasValidQuestionCount() {
-      // Nếu không dùng custom thì xem như hợp lệ ngay.
       if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true;
 
-      // Khi dùng custom, kiểm tra `customQuestionCount` có phải số hợp lệ, không nhỏ hơn 5 và không vượt quá số từ đang có.
       const enteredQuestionCount = Number(this.customQuestionCount);
       return Number.isFinite(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount;
     }
   },
   watch: {
     availableWordCount(newMax) {
-      // Khi bộ lọc đổi làm số từ giảm xuống, ép `customQuestionCount` về mức tối đa mới để tránh chọn quá số từ hiện có.
       if (Number(this.customQuestionCount) > newMax) this.customQuestionCount = newMax;
     },
     customQuestionCount(newValue) {
-      // Nếu ô custom bị nhập sai kiểu dữ liệu, đưa giá trị về mức an toàn để form không bị lỗi.
       const enteredQuestionCount = Number(newValue);
       if (!Number.isFinite(enteredQuestionCount)) this.customQuestionCount = Math.min(5, this.availableWordCount || 5);
     }
@@ -193,7 +186,7 @@ export default {
   async mounted() {
     try {
       this.words = await getWords();
-      this.categories = await getCategoryNames();
+      this.categories = await getCategories();
 
       const retakeIds = sessionStorage.getItem('retake_word_ids');
       if (retakeIds) {
@@ -206,27 +199,23 @@ export default {
         }
       }
     } catch (error) {
-      console.error(error);
+      // Words failed to load
     }
   },
   methods: {
     onQuestionLanguageChange() {
-      // Nếu `questionLanguage` trùng `answerLanguage`, tự đổi `answerLanguage` sang ngôn ngữ khác để câu hỏi và đáp án không bị trùng nhau.
       if (this.questionLanguage === this.answerLanguage) {
         this.answerLanguage = this.questionLanguage === 'german' ? 'english' : 'german';
       }
     },
     onAnswerLanguageChange() {
-      // Xử lý ngược lại cho dropdown đáp án: nếu bị trùng thì đổi `questionLanguage`.
       if (this.answerLanguage === this.questionLanguage) {
         this.questionLanguage = this.answerLanguage === 'german' ? 'english' : 'german';
       }
     },
     startTest() {
-      // Bắt đầu từ `availableWords`, tính ra số câu cần lấy, trộn ngẫu nhiên rồi lưu kết quả vào `testWords`.
       let questionLimit = this.availableWordCount;
 
-      // Nếu không phải mode category thì đọc thêm `selectedQuestionCount` hoặc `customQuestionCount` để chốt số câu.
       if (this.selectedWordSet !== 'category') {
         if (this.selectedQuestionCount === 'custom') {
           questionLimit = Number(this.customQuestionCount);
@@ -235,7 +224,6 @@ export default {
         }
       }
 
-      // Chuẩn hóa `questionLimit` để không âm, không NaN và không vượt quá số từ hiện có.
       if (!Number.isFinite(questionLimit) || questionLimit < 1) questionLimit = this.availableWordCount;
       questionLimit = Math.min(questionLimit, this.availableWordCount);
 
@@ -243,12 +231,10 @@ export default {
         .sort(() => 0.5 - Math.random())
         .slice(0, questionLimit);
 
-      // Lưu bộ từ đã chốt vào `testWords` và bật `isSessionActive` để render component `VocabTest`.
       this.testWords = randomWords;
       this.isSessionActive = true;
     },
     exitTest() {
-      // Khi thoát bài test, tắt trạng thái làm bài và xóa `testWords` để quay về màn setup.
       this.isSessionActive = false;
       this.testWords = [];
     }

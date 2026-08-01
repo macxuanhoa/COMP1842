@@ -21,9 +21,9 @@ const WordSchema = new Schema({
     maxlength: 80
   },
   category: {
-    type: String,
-    default: 'General',
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Categories',
+    required: true
   },
   favourite: {
     type: Boolean,
