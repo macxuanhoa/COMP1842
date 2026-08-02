@@ -45,7 +45,7 @@
           <div class="field">
             <label><i class="tag icon"></i> Category</label>
 
-            <select class="ui dropdown fluid" v-model="selectedCategory">
+            <select class="ui dropdown fluid" v-model="selectedCategoryId">
               <option value="">All Categories</option>
 
               <option
@@ -96,7 +96,7 @@
         </span>
       </div>
 
-      <div>
+      <div> <!-- // không có dữ liệu Read - gợi ý tạo mới-->
         <div v-if="visibleWords.length === 0" class="library-empty-state">
           <div class="library-empty-icon">
             <i class="search icon"></i>
@@ -115,7 +115,7 @@
           </router-link>
         </div>
 
-        <div v-else class="library-table-wrapper">
+        <div v-else class="library-table-wrapper"> <!-- // có dữ liệu Read - hiển thị bảng -->
           <table class="ui celled compact table library-table">
             <colgroup>
               <col class="favourite-column" />
@@ -143,7 +143,7 @@
               </tr>
             </thead>
 
-            <tbody>
+            <tbody> <!-- favourite trên bảng Read -->
               <tr v-for="word in visibleWords" :key="word._id">
                 <td
                   class="center aligned favourite-cell"
@@ -156,8 +156,8 @@
                 <!-- English -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text" :title="word.english">
-                      {{ word.english || '—' }}
+                    <span class="language-text">
+                      {{ word.english }}
                     </span>
 
                     <button
@@ -175,8 +175,8 @@
                 <!-- German -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text" :title="word.german">
-                      {{ word.german || '—' }}
+                    <span class="language-text">
+                      {{ word.german }}
                     </span>
 
                     <button
@@ -194,8 +194,8 @@
                 <!-- French -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text" :title="word.french">
-                      {{ word.french || '—' }}
+                    <span class="language-text">
+                      {{ word.french }}
                     </span>
 
                     <button
@@ -211,16 +211,13 @@
                 </td>
 
                 <td>
-                  <span
-                    class="ui label mini basic category-label"
-                    :title="word.category?.name || ''"
-                  >
+                  <span class="ui label mini basic category-label">
                     <i class="tag icon"></i>
-                    <span>{{ word.category?.name || '\u2014' }}</span>
+                    <span>{{ word.category?.name }}</span>
                   </span>
                 </td>
 
-                <td class="center aligned">
+                <td class="center aligned"> <!-- Actions điều hướng-->
                   <div class="library-row-actions">
                     <router-link
                       :to="{ name: 'show', params: { id: word._id } }"
@@ -314,7 +311,7 @@ export default {
       words: [],                   // tất cả words từ database
       categories: [],              // tất cả categories (cho dropdown lọc)
       searchText: '',              // ô tìm kiếm (lọc theo 3 ngôn ngữ)
-      selectedCategory: '',        // category đang lọc ('' = tất cả)
+      selectedCategoryId: '',        // category đang lọc ('' = tất cả)
       selectedFavouriteFilter: 'all', // 'all' | 'fav' | 'normal'
       selectedSortOrder: 'newest', // 'newest' | 'oldest'
       currentPage: 1,              // trang hiện tại
@@ -324,7 +321,7 @@ export default {
   watch: {
     // Khi thay đổi filter → reset về trang 1
     searchText: 'resetPage',
-    selectedCategory: 'resetPage',
+    selectedCategoryId: 'resetPage',
     selectedFavouriteFilter: 'resetPage',
     selectedSortOrder: 'resetPage',
     // Nếu filter làm giảm tổng số trang → lùi về trang cuối
@@ -337,43 +334,36 @@ export default {
   computed: {
     // Lọc + sắp xếp words theo tất cả điều kiện
     filteredWords() {
-      let filteredWords = [...this.words];
       const searchValue = this.searchText.trim().toLowerCase();
+      let result = [...this.words];
 
-      // Lọc theo từ khóa tìm kiếm (trong cả 3 ngôn ngữ)
-      if (searchValue) {
-        filteredWords = filteredWords.filter(word => {
-          return ['german', 'english', 'french'].some(language => {
-            return (word[language] || '').toLowerCase().includes(searchValue);
-          });
-        });
-      }
-
-      // Lọc theo category
-      if (this.selectedCategory) {
-        filteredWords = filteredWords.filter(
-          word => String(word.category?._id || word.category) === String(this.selectedCategory)
+      if (searchValue) { //chức năng tìm kiếm
+        result = result.filter(word =>
+          word.german.toLowerCase().includes(searchValue) ||
+          word.english.toLowerCase().includes(searchValue) ||
+          word.french.toLowerCase().includes(searchValue)
         );
       }
 
-      // Lọc theo trạng thái yêu thích
-      if (this.selectedFavouriteFilter === 'fav') {
-        filteredWords = filteredWords.filter(word => word.favourite);
+      if (this.selectedCategoryId) { //lọc theo category
+        result = result.filter(word => word.category._id === this.selectedCategoryId);
+      }
+
+      if (this.selectedFavouriteFilter === 'fav') { //lọc theo favourite
+        result = result.filter(word => word.favourite);
       }
       if (this.selectedFavouriteFilter === 'normal') {
-        filteredWords = filteredWords.filter(word => !word.favourite);
+        result = result.filter(word => !word.favourite);
       }
 
-      // Sắp xếp theo ngày tạo
-      filteredWords.sort((firstWord, secondWord) => {
-        const firstDate = new Date(firstWord.created_date);
-        const secondDate = new Date(secondWord.created_date);
-        return this.selectedSortOrder === 'newest'
-          ? secondDate - firstDate
-          : firstDate - secondDate;
+      result.sort((a, b) => {
+        if (this.selectedSortOrder === 'newest') {
+          return new Date(b.created_date) - new Date(a.created_date);
+        }
+        return new Date(a.created_date) - new Date(b.created_date);
       });
 
-      return filteredWords;
+      return result;
     },
     // ── Phân trang ───────────────────────────────────────────────────
     totalPages() {
@@ -438,9 +428,11 @@ export default {
       const nextFavouriteValue = !word.favourite;
       try {
         const updatedWord = await updateWord({ _id: word._id, favourite: nextFavouriteValue });
-        const wordIndex = this.words.findIndex(savedWord => savedWord._id === word._id);
-        if (wordIndex !== -1) {
-          this.words.splice(wordIndex, 1, updatedWord);
+        for (let i = 0; i < this.words.length; i++) {
+          if (this.words[i]._id === word._id) {
+            this.words.splice(i, 1, updatedWord);
+            break;
+          }
         }
         this.flash(
           nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites',
@@ -452,11 +444,11 @@ export default {
     },
 
     // Xóa word sau khi xác nhận
-    async deleteWordItem(word) {
+    async deleteWordItem(wordToDelete) {
       if (!window.confirm('Are you sure you want to delete this word?')) return;
       try {
-        await deleteWord(word._id);
-        this.words = this.words.filter(savedWord => savedWord._id !== word._id);
+        await deleteWord(wordToDelete._id);
+        this.words = this.words.filter(word => word._id !== wordToDelete._id);
         this.flash('Word deleted successfully!', 'success');
       } catch (error) {
         this.flash('Failed to delete the word.', 'error');

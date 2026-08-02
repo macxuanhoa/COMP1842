@@ -278,7 +278,7 @@ export default {
     // Đếm số từ đang dùng 1 category (theo ObjectId)
     getWordsUsingCategory(categoryId) {
       return this.words.filter(
-        word => String(word.category?._id || word.category) === String(categoryId)
+        word => word.category._id === categoryId
       ).length;
     },
     // Load categories + words từ API
@@ -301,9 +301,11 @@ export default {
         this.flash('Category created!', 'success');
         this.newCategoryName = '';
         await this.loadPageData();
-        const index = this.categories.findIndex(category => category.name.toLowerCase() === name.toLowerCase());
-        if (index !== -1) {
-          this.currentPage = Math.floor(index / this.pageSize) + 1;
+        for (let i = 0; i < this.categories.length; i++) {
+          if (this.categories[i].name.toLowerCase() === name.toLowerCase()) {
+            this.currentPage = Math.floor(i / this.pageSize) + 1;
+            break;
+          }
         }
       } catch (error) {
         this.flash(error?.response?.data?.message || 'Failed to create category.', 'error');

@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page-narrow">
+  <div class="workspace-page">
     <div v-if="!isSessionActive">
       <header class="workspace-header">
         <div>
@@ -60,10 +60,10 @@
 
           <div v-if="selectedWordSet === 'category'" class="field">
             <label>Category</label>
-            <select class="ui dropdown fluid" v-model="selectedCategory">
+            <select class="ui dropdown fluid" v-model="selectedCategoryId">
               <option value="">Choose a category…</option>
               <option v-for="category in categories" :key="category._id" :value="category._id">
-                {{ category.name }} ({{ words.filter(word => String(word.category?._id || word.category) === String(category._id)).length }} words)
+                {{ category.name }} ({{ words.filter(word => word.category._id === category._id).length }} words)
               </option>
             </select>
           </div>
@@ -135,7 +135,7 @@ export default {
       questionLanguage: 'german', // ngôn ngữ câu hỏi (mặc định: hỏi tiếng Đức)
       answerLanguage: 'english',  // ngôn ngữ trả lời (mặc định: trả lời tiếng Anh)
       selectedWordSet: 'all',     // bộ từ: 'all' | 'fav' | 'category'
-      selectedCategory: '',       // category đã chọn (khi wordSet = 'category')
+      selectedCategoryId: '',       // category đã chọn (khi wordSet = 'category')
       selectedQuestionCount: 'all', // số câu: 'all' | 5 | 10 | 20 | 'custom'
       customQuestionCount: 5,     // số câu tùy chỉnh
       isSessionActive: false,     // đang trong phiên quiz
@@ -147,21 +147,21 @@ export default {
     favouriteWordCount() {
       return this.words.filter(word => word.favourite).length;
     },
-    // Danh sách từ khả dụng dựa trên bộ lọc đã chọn
     availableWords() {
+      if (this.selectedWordSet === 'all') return this.words;
       if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite);
       if (this.selectedWordSet === 'category') {
-        if (!this.selectedCategory) return [];
+        if (!this.selectedCategoryId) return [];
         return this.words.filter(
-          word => String(word.category?._id || word.category) === String(this.selectedCategory)
+          word => word.category._id === this.selectedCategoryId
         );
       }
-      return this.words; // 'all'
+      return this.words;
     },
     availableWordCount() {
       return this.availableWords.length;
     },
-    // Các lựa chọn số câu hỏi preset (chỉ hiện những số ≤ tổng từ khả dụng)
+    // Các lựa chọn số câu hỏi preset
     questionSizeOptions() {
       return [5, 10, 20].filter(count => count <= this.availableWordCount);
     },

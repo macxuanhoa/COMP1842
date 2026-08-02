@@ -28,7 +28,7 @@
         <div class="bar" :style="{ width: progressPercent + '%' }"></div>
       </div>
 
-      <form v-if="!testOver" action="#" class="ui form quiz-form" @submit.prevent="submitAnswer">
+      <form v-if="!isTestOver" action="#" class="ui form quiz-form" @submit.prevent="submitAnswer">
         <div class="field">
           <label>Translate from {{ questionLanguageName }}</label>
           <div class="ui labeled input fluid">
@@ -51,7 +51,7 @@
               v-model="userAnswer"
               autocomplete="off"
               ref="answerInput"
-              :disabled="waitingNext"
+              :disabled="isWaitingNext"
               required
             />
           </div>
@@ -66,7 +66,7 @@
         </div>
 
         <button
-          v-if="!waitingNext"
+          v-if="!isWaitingNext"
           class="ui primary fluid button icon labeled"
           type="submit"
         >
@@ -104,10 +104,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in wrongAnswers" :key="index">
-                  <td><strong>{{ item.word[questionLanguage] }}</strong></td>
-                  <td><span class="quiz-review-guess">{{ item.guess || '(blank)' }}</span></td>
-                  <td><span class="ui green text">{{ item.word[answerLanguage] }}</span></td>
+                <tr v-for="(wrongAnswer, index) in wrongAnswers" :key="index">
+                  <td><strong>{{ wrongAnswer.word[questionLanguage] }}</strong></td>
+                  <td><span class="quiz-review-guess">{{ wrongAnswer.guess || '(blank)' }}</span></td>
+                  <td><span class="ui green text">{{ wrongAnswer.word[answerLanguage] }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -143,10 +143,10 @@ export default {
       score: 0,             // số câu đúng
       answeredCount: 0,     // số câu đã trả lời
       totalQuestions: this.words.length, // tổng số câu hỏi
-      testOver: false,      // bài test đã kết thúc chưa
+      isTestOver: false,      // bài test đã kết thúc chưa
       feedback: null,       // 'correct' hoặc 'wrong' (null = chưa trả lời)
       lastCorrectAnswer: '',// đáp án đúng của câu vừa làm (hiển thị khi sai)
-      waitingNext: false,   // đang chờ user nhấn "Next Question"
+      isWaitingNext: false,   // đang chờ user nhấn "Next Question"
       languageDetails: {    // metadata cờ + tên cho 3 ngôn ngữ
         german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
         english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
@@ -201,7 +201,7 @@ export default {
         this.feedback = 'wrong';
         this.wrongAnswers.push({ word: this.currentWord, guess: this.userAnswer });
       }
-      this.waitingNext = true;
+      this.isWaitingNext = true;
     },
     // Lưu kết quả quiz vào localStorage (giữ tối đa 50 lần gần nhất)
     saveResult() {
@@ -221,12 +221,12 @@ export default {
     nextQuestion() {
       this.answeredCount += 1;
       this.feedback = null;
-      this.waitingNext = false;
+      this.isWaitingNext = false;
       this.userAnswer = '';
       this.randomizedWords.shift();
 
       if (this.randomizedWords.length === 0) {
-        this.testOver = true;
+        this.isTestOver = true;
         this.saveResult();
       } else {
         this.$nextTick(() => {

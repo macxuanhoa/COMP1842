@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page-narrow">
+  <div class="workspace-page">
     <header class="workspace-header">
       <div>
         <div class="workspace-eyebrow"><i class="eye icon"></i> Vocabulary entry</div>
@@ -26,7 +26,7 @@
           <div>
             <span class="ui basic label word-detail-category">
               <i class="tag icon"></i>
-              {{ word.category?.name || '\u2014' }}
+              {{ word.category?.name }}
             </span>
           </div>
         </div>

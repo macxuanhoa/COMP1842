@@ -36,7 +36,7 @@
         <select
           class="ui fluid dropdown"
           v-model="selectedCategoryId"
-          :disabled="isAddingCategory || categories.length === 0"
+          :disabled="isAddingCategory"
         >
           <option value="" disabled>Select a category…</option>
           <option
@@ -74,7 +74,7 @@
     </div>
 
     <div class="word-form-actions">
-      <button class="ui primary button icon labeled" type="submit" :disabled="submitting">
+      <button class="ui primary button icon labeled" type="submit" :disabled="isSubmitting">
         <i class="save icon"></i> Save word
       </button>
     </div>
@@ -106,7 +106,7 @@ export default {
       errorMessage: '',
       isAddingCategory: false,
       newCategoryName: '',
-      submitting: false
+      isSubmitting: false
     };
   },
   // Khi component mount: tải danh sách category và đặt category hiện tại
@@ -153,7 +153,7 @@ export default {
         return;
       }
 
-      this.submitting = true;
+      this.isSubmitting = true;
       this.errorMessage = '';
 
       let categoryId = this.selectedCategoryId;
@@ -163,7 +163,7 @@ export default {
         const name = this.newCategoryName.trim();
         if (!name) {
           this.errorMessage = 'Please enter a category name.';
-          this.submitting = false;
+          this.isSubmitting = false;
           return;
         }
         try {
@@ -174,7 +174,7 @@ export default {
           this.newCategoryName = '';
         } catch (error) {
           this.errorMessage = error?.response?.data?.message || 'Failed to create category.';
-          this.submitting = false;
+          this.isSubmitting = false;
           return;
         }
       }
@@ -182,7 +182,7 @@ export default {
       // Validate phải có category
       if (!categoryId) {
         this.errorMessage = 'Please select or create a category.';
-        this.submitting = false;
+        this.isSubmitting = false;
         return;
       }
 
@@ -199,7 +199,7 @@ export default {
       }
 
       this.$emit('createOrUpdate', payload);
-      this.submitting = false;
+      this.isSubmitting = false;
     }
   }
 };

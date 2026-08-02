@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace-page workspace-page-narrow">
+  <div class="workspace-page">
     <header class="workspace-header">
       <div>
         <div class="workspace-eyebrow"><i class="edit icon"></i> Update vocabulary</div>

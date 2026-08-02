@@ -109,7 +109,10 @@ export default {
     recentAverage() {
       const recentAttempts = this.quizHistory.slice(0, 5);
       if (!recentAttempts.length) return 0;
-      const totalPercent = recentAttempts.reduce((sum, attempt) => sum + this.getScorePercent(attempt), 0);
+      let totalPercent = 0;
+      for (let i = 0; i < recentAttempts.length; i++) {
+        totalPercent += this.getScorePercent(recentAttempts[i]);
+      }
       return Math.round(totalPercent / recentAttempts.length);
     }
   },

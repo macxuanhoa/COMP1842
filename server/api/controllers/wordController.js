@@ -44,13 +44,11 @@ exports.update_a_word = async (req, res) => {
     const word = await Word.findById(req.params.wordId);
     if (!word) return res.status(404).json({ message: 'Word not found.' });
 
-    Object.assign(word, {
-      german: req.body.german,
-      english: req.body.english,
-      french: req.body.french,
-      category: req.body.category,
-      favourite: req.body.favourite
-    });
+    if (req.body.german !== undefined) word.german = req.body.german;
+    if (req.body.english !== undefined) word.english = req.body.english;
+    if (req.body.french !== undefined) word.french = req.body.french;
+    if (req.body.category !== undefined) word.category = req.body.category;
+    if (req.body.favourite !== undefined) word.favourite = req.body.favourite;
 
     const updatedWord = await word.save();
     await updatedWord.populate('category', 'name');

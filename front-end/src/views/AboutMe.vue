@@ -136,13 +136,13 @@
         <div class="about-list-card">
           <h3><i class="book icon text-blue"></i> Word Management</h3>
           <ul>
-            <li v-for="item in coreWordFeatures" :key="item">{{ item }}</li>
+            <li v-for="feature in coreWordFeatures" :key="feature">{{ feature }}</li>
           </ul>
         </div>
         <div class="about-list-card">
           <h3><i class="tags icon text-blue"></i> Category Management</h3>
           <ul>
-            <li v-for="item in coreCategoryFeatures" :key="item">{{ item }}</li>
+            <li v-for="feature in coreCategoryFeatures" :key="feature">{{ feature }}</li>
           </ul>
         </div>
       </div>
@@ -163,9 +163,9 @@
       </div>
 
       <div class="about-grid">
-        <article v-for="item in additionalFeatures" :key="item.title" class="about-card">
-          <h3><i class="star outline icon text-yellow"></i> {{ item.title }}</h3>
-          <p>{{ item.description }}</p>
+        <article v-for="feature in additionalFeatures" :key="feature.title" class="about-card">
+          <h3><i class="star outline icon text-yellow"></i> {{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
         </article>
       </div>
     </section>
