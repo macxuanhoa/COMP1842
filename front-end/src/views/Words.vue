@@ -143,7 +143,7 @@
               </tr>
             </thead>
 
-            <tbody> <!-- favourite trên bảng Read -->
+            <tbody> <!-- tr hiển thị sau khi tính xong visibleWords trên bảng Read -->
               <tr v-for="word in visibleWords" :key="word._id">
                 <td
                   class="center aligned favourite-cell"
@@ -273,7 +273,7 @@
               :key="page"
               type="button"
               class="pagination-num"
-              :class="{ active: currentPage === page }"
+              :class="{ active: currentPage === page }" 
               @click="goToPage(page)"
             >
               {{ page }}
@@ -324,7 +324,7 @@ export default {
     selectedCategoryId: 'resetPage',
     selectedFavouriteFilter: 'resetPage',
     selectedSortOrder: 'resetPage',
-    // Nếu filter làm giảm tổng số trang → lùi về trang cuối
+    // Sau khi lọc dữ liệu tại trang 4, lọc xong còn 2 trang → lùi về trang cuối để tránh lỗi hiển thị
     filteredWords() {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;
@@ -373,12 +373,16 @@ export default {
       const start = (this.currentPage - 1) * this.pageSize; //start từ kết quả ví dụ 8, 16, 24,25,26... (tùy trang)
       return this.filteredWords.slice(start, start + this.pageSize); 
     },
-    paginationSummary() {//hiển thị số trang trên bảng
+    paginationSummary() {
       const total = this.filteredWords.length;
       if (total === 0) return '0 words';
+
+      // Vị trí từ đầu tiên ví dụ 1, 9, 17,...
       const start = (this.currentPage - 1) * this.pageSize + 1;
-      const end = Math.min(this.currentPage * this.pageSize, total);
-      return `Showing ${start}–${end} of ${total} words`; 
+      // Vị trí từ cuối cùng của trang đang đứng
+      const end = Math.min(start + this.pageSize - 1, total);
+
+      return `Showing ${start}–${end} of ${total} words`;
     }
   },
   mounted() {
@@ -400,15 +404,15 @@ export default {
       }
     },
     goToPage(page) {
-      this.currentPage = page;
+      this.currentPage = page; // tính lại currentPage ở visib
     },
 
     // Phát âm thanh bằng Web Speech API của trình duyệt
     speakWord(text, languageCode) {
-      if (!text || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = languageCode;
+      if (!text || !window.speechSynthesis) return; //Nếu không có từ hoặc trình duyệt không hỗ trợ đọc giọng nói thì dừng hàm.
+      window.speechSynthesis.cancel(); //Dừng âm thanh đang đọc trước đó, tránh nhiều giọng đọc chồng lên nhau.
+      const utterance = new SpeechSynthesisUtterance(text); //Tạo một đối tượng chứa nội dung cần đọc.
+      utterance.lang = languageCode; //Gán ngôn ngữ phát âm cho nội dung utterance
       window.speechSynthesis.speak(utterance);
     },
 
@@ -418,39 +422,52 @@ export default {
         const [wordsData, categoriesData] = await Promise.all([getWords(), getCategories()]);
         this.words = wordsData;
         this.categories = categoriesData;
-      } catch (error) {
+      } catch {
         this.flash('Failed to load vocabulary data.', 'error');
       }
     },
 
-    // Bật/tắt trạng thái yêu thích
+    // ── Bật/tắt yêu thích ──────────────────────────────────────────
     async toggleFavourite(word) {
-      const nextFavouriteValue = !word.favourite;
       try {
-        const updatedWord = await updateWord({ _id: word._id, favourite: nextFavouriteValue });
-        for (let i = 0; i < this.words.length; i++) {
-          if (this.words[i]._id === word._id) {
-            this.words.splice(i, 1, updatedWord);
-            break;
-          }
-        }
+        // Gửi trạng thái ngược lại lên server
+        const updatedWord = await updateWord({
+          _id: word._id,
+          favourite: !word.favourite
+        });
+
+        // Chỉ cập nhật đúng trường favourite — không đụng đến các trường khác
+        word.favourite = updatedWord.favourite;
+
+        // Hiển thị thông báo
         this.flash(
-          nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites',
-          'success', { timeout: 1000 }
+          word.favourite
+            ? 'Added to Favourites!'
+            : 'Removed from Favourites',
+          'success',
+          { timeout: 1000 }
         );
-      } catch (error) {
+      } catch {
         this.flash('Failed to update favourite status.', 'error');
       }
     },
 
-    // Xóa word sau khi xác nhận
+    // ── Xóa từ sau khi xác nhận ────────────────────────────────────
     async deleteWordItem(wordToDelete) {
-      if (!window.confirm('Are you sure you want to delete this word?')) return;
+      // 1. Hỏi xác nhận
+      const confirmed = window.confirm('Are you sure you want to delete this word?');
+      if (!confirmed) return;
+
       try {
+        // 2. Gửi lên server để xóa
         await deleteWord(wordToDelete._id);
-        this.words = this.words.filter(word => word._id !== wordToDelete._id);
+
+        // 3. Loại bỏ từ khỏi mảng (giữ lại những từ khác id)
+        this.words = this.words.filter(eachWord => eachWord._id !== wordToDelete._id);
+
+        // 4. Hiển thị thông báo
         this.flash('Word deleted successfully!', 'success');
-      } catch (error) {
+      } catch {
         this.flash('Failed to delete the word.', 'error');
       }
     }

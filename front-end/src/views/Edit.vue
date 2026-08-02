@@ -14,12 +14,7 @@
       </div>
     </header>
 
-    <div v-if="!word" class="ui error message workspace-loader">
-      <div class="header">Word unavailable</div>
-      <p>Could not load word details. It may have been deleted.</p>
-    </div>
-
-    <section v-else class="ui segment workspace-panel">
+    <section class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
           <div>
@@ -44,10 +39,10 @@ export default {
   components: { 'word-form': WordForm },
   data() {
     return {
-      word: null // dữ liệu word load từ API (null = đang load hoặc lỗi)
+      word: null // khi trang Edit vừa mở thì chưa có dữ liệu word vì API chưa trả về.
     };
   },
-  // Khi component mount: gọi API lấy word theo ID trên URL
+  // sau đó mounted() chạy: gọi API lấy word theo ID trên URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);

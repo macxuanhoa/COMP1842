@@ -308,10 +308,6 @@ body {
   line-height: 1;
 }
 
-.workspace-loader {
-  margin: 3rem auto !important;
-}
-
 /* Crisp Action Controls */
 .ui.button.primary {
   background: #0f172a !important;

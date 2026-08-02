@@ -14,19 +14,14 @@
       </div>
     </header>
 
-    <div v-if="!word" class="ui error message word-detail-error">
-      <div class="header">Word unavailable</div>
-      <p>Could not find the word details. It might have been deleted.</p>
-    </div>
-
-    <section v-else class="ui segment workspace-panel">
+    <section class="ui segment workspace-panel">
       <div class="word-detail-overview">
         <div>
           <span class="workspace-section-label">Assigned category</span>
           <div>
             <span class="ui basic label word-detail-category">
               <i class="tag icon"></i>
-              {{ word.category?.name }}
+              {{ word.category.name }}
             </span>
           </div>
         </div>
@@ -128,7 +123,7 @@ export default {
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
-    } catch (error) {
+    } catch {
       this.flash('Failed to load word details.', 'error');
     }
   },
@@ -140,28 +135,39 @@ export default {
       utterance.lang = languageCode;
       window.speechSynthesis.speak(utterance);
     },
+    // ── Bật/tắt yêu thích ──────────────────────────────────────────
     async toggleFavourite() {
-      if (!this.word) return;
-      const nextFavouriteValue = !this.word.favourite;
       try {
         const updatedWord = await updateWord({
           _id: this.word._id,
-          favourite: nextFavouriteValue
+          favourite: !this.word.favourite
         });
-        this.word = updatedWord;
-        this.flash(nextFavouriteValue ? 'Added to Favourites!' : 'Removed from Favourites', 'success', { timeout: 1000 });
-      } catch (error) {
+
+        // Chỉ cập nhật đúng trường favourite
+        this.word.favourite = updatedWord.favourite;
+
+        this.flash(
+          this.word.favourite
+            ? 'Added to Favourites!'
+            : 'Removed from Favourites',
+          'success',
+          { timeout: 1000 }
+        );
+      } catch {
         this.flash('Failed to update favourite status.', 'error');
       }
     },
-    // Xóa word sau khi xác nhận
+
+    // ── Xóa từ sau khi xác nhận ────────────────────────────────────
     async deleteWordItem() {
-      if (!window.confirm('Are you sure you want to delete this word?')) return;
+      const confirmed = window.confirm('Are you sure you want to delete this word?');
+      if (!confirmed) return;
+
       try {
         await deleteWord(this.word._id);
         this.flash('Word deleted successfully!', 'success');
         this.$router.push('/words');
-      } catch (error) {
+      } catch {
         this.flash('Failed to delete the word.', 'error');
       }
     }
@@ -178,9 +184,6 @@ export default {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 0.35rem;
-}
-.word-detail-error {
-  display: block;
 }
 .word-detail-overview {
   display: flex;

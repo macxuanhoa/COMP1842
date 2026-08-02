@@ -241,7 +241,7 @@ export default {
       const total = this.categories.length;
       if (total === 0) return '0 categories';
       const start = (this.currentPage - 1) * this.pageSize + 1;
-      const end = Math.min(this.currentPage * this.pageSize, total);
+      const end = Math.min(start + this.pageSize - 1, total);
       return `Showing ${start}–${end} of ${total} categories`;
     }
   },
@@ -287,7 +287,7 @@ export default {
         const [categoriesData, wordsData] = await Promise.all([getCategories(), getWords()]);
         this.categories = categoriesData;
         this.words = wordsData;
-      } catch (error) {
+      } catch {
         this.flash('Failed to load page data.', 'error');
       }
     },
@@ -301,11 +301,13 @@ export default {
         this.flash('Category created!', 'success');
         this.newCategoryName = '';
         await this.loadPageData();
-        for (let i = 0; i < this.categories.length; i++) {
-          if (this.categories[i].name.toLowerCase() === name.toLowerCase()) {
-            this.currentPage = Math.floor(i / this.pageSize) + 1;
-            break;
-          }
+
+        // Tìm vị trí category vừa tạo để nhảy đến đúng trang chứa nó
+        const categoryIndex = this.categories.findIndex(
+          category => category.name.toLowerCase() === name.toLowerCase()
+        );
+        if (categoryIndex !== -1) {
+          this.currentPage = Math.floor(categoryIndex / this.pageSize) + 1;
         }
       } catch (error) {
         this.flash(error?.response?.data?.message || 'Failed to create category.', 'error');
@@ -334,18 +336,25 @@ export default {
         this.flash(error?.response?.data?.message || 'Failed to rename.', 'error');
       }
     },
-    // Xóa category (chỉ khi không có từ nào dùng nó)
+    // ── Xóa category (chỉ khi không có từ nào dùng nó) ──────────────
     async deleteCategoryItem(category) {
-      if (this.getWordsUsingCategory(category._id) > 0) {
+      // 1. Kiểm tra còn từ nào dùng category này không
+      const wordsCount = this.getWordsUsingCategory(category._id);
+      if (wordsCount > 0) {
         return this.flash('Cannot delete a category with words.', 'error');
       }
-      if (!confirm(`Delete "${category.name}"?`)) return;
+
+      // 2. Hỏi xác nhận
+      const confirmed = window.confirm(`Delete "${category.name}"?`);
+      if (!confirmed) return;
+
+      // 3. Gửi lên server để xóa → load lại dữ liệu
       try {
         await deleteCategory(category._id);
         this.flash('Category deleted.', 'success');
         await this.loadPageData();
-      } catch (error) {
-        this.flash(error?.response?.data?.message || 'Failed to delete.', 'error');
+      } catch {
+        this.flash('Failed to delete category.', 'error');
       }
     }
   }
