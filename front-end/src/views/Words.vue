@@ -332,12 +332,12 @@ export default {
     }
   },
   computed: {
-    // Lọc + sắp xếp words theo tất cả điều kiện
+    // filteredWords = bản sao dữ liệu + (lọc + sắp xếp) --> sau đó return dữ liệu cuối cùng
     filteredWords() {
       const searchValue = this.searchText.trim().toLowerCase();
       let result = [...this.words];
 
-      if (searchValue) { //chức năng tìm kiếm
+      if (searchValue) { //tìm kiếm
         result = result.filter(word =>
           word.german.toLowerCase().includes(searchValue) ||
           word.english.toLowerCase().includes(searchValue) ||
@@ -366,19 +366,19 @@ export default {
       return result;
     },
     // ── Phân trang ───────────────────────────────────────────────────
-    totalPages() {
+    totalPages() { //tính xem cần bao nhiêu trang (quy định 8 từ/trang)
       return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
     },
-    visibleWords() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      return this.filteredWords.slice(start, start + this.pageSize);
+    visibleWords() {  //khi đang ở trang nào thì lấy đúng nhóm từ của trang đó (0-8, 8-16, 16-24,...)
+      const start = (this.currentPage - 1) * this.pageSize; //start từ kết quả ví dụ 8, 16, 24,25,26... (tùy trang)
+      return this.filteredWords.slice(start, start + this.pageSize); 
     },
-    paginationSummary() {
+    paginationSummary() {//hiển thị số trang trên bảng
       const total = this.filteredWords.length;
       if (total === 0) return '0 words';
       const start = (this.currentPage - 1) * this.pageSize + 1;
       const end = Math.min(this.currentPage * this.pageSize, total);
-      return `Showing ${start}–${end} of ${total} words`;
+      return `Showing ${start}–${end} of ${total} words`; 
     }
   },
   mounted() {
