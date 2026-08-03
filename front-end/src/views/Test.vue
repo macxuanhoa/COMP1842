@@ -209,6 +209,17 @@ export default {
         this.questionLanguage = this.answerLanguage === 'german' ? 'english' : 'german';
       }
     },
+    // ── Fisher-Yates shuffle: xáo trộn mảng với độ ngẫu nhiên công bằng ─
+    shuffleArray(array) {
+      for (let currentIndex = array.length - 1; currentIndex > 0; currentIndex--) {
+        const randomIndex = Math.floor(Math.random() * (currentIndex + 1));
+        const temp = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temp;
+      }
+      return array;
+    },
+
     // Khởi động quiz: chọn ngẫu nhiên số câu hỏi từ danh sách từ khả dụng
     startTest() {
       let questionLimit = this.availableWordCount;
@@ -224,10 +235,8 @@ export default {
       // Chặn trên không vượt quá số từ hiện có (đề phòng DevTools bypass nút disabled)
       questionLimit = Math.min(questionLimit, this.availableWordCount);
 
-      const randomWords = [...this.availableWords]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, questionLimit);
-      this.testWords = randomWords;
+      const shuffledWords = this.shuffleArray([...this.availableWords]);
+      this.testWords = shuffledWords.slice(0, questionLimit);
       this.isSessionActive = true;
     },
     // Thoát quiz, quay về màn hình thiết lập

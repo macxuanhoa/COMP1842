@@ -137,7 +137,7 @@ export default {
   },
   data() {
     return {
-      randomizedWords: [...this.words].sort(() => 0.5 - Math.random()), // xáo trộn thứ tự từ
+      randomizedWords: this.shuffleArray([...this.words]), // Fisher-Yates xáo trộn
       wrongAnswers: [],     // danh sách câu trả lời sai (để review cuối)
       userAnswer: '',       // câu trả lời hiện tại của user
       score: 0,             // số câu đúng
@@ -187,6 +187,17 @@ export default {
     });
   },
   methods: {
+    // ── Fisher-Yates shuffle: xáo trộn mảng công bằng, không thiên vị ─
+    shuffleArray(array) {
+      for (let currentIndex = array.length - 1; currentIndex > 0; currentIndex--) {
+        const randomIndex = Math.floor(Math.random() * (currentIndex + 1));
+        const temp = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temp;
+      }
+      return array;
+    },
+
     // Kiểm tra câu trả lời (so sánh không phân biệt hoa/thường, bỏ khoảng trắng)
     submitAnswer() {
       const correctValue = this.currentWord[this.answerLanguage].trim().toLowerCase();
