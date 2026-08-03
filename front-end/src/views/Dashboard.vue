@@ -45,7 +45,7 @@
             <p v-else>No attempts yet.</p>
           </div>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="history icon"></i>
         </span>
       </div>

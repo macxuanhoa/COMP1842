@@ -59,7 +59,6 @@
         type="text"
         placeholder="Enter category name..."
         v-model.trim="newCategoryName"
-        maxlength="40"
       />
     </div>
 
@@ -161,11 +160,25 @@ export default {
       // Nếu đang tạo category mới: gọi API tạo category trước
       if (this.isAddingCategory) {
         const name = this.newCategoryName.trim();
+
         if (!name) {
-          this.errorMessage = 'Please enter a category name.';
+          this.errorMessage = 'Category name is required.';
           this.isSubmitting = false;
           return;
         }
+
+        if (name.length < 2) {
+          this.errorMessage = 'Category name must be at least 2 characters.';
+          this.isSubmitting = false;
+          return;
+        }
+
+        if (name.length > 40) {
+          this.errorMessage = 'Category name cannot exceed 40 characters.';
+          this.isSubmitting = false;
+          return;
+        }
+
         try {
           const newCategory = await createCategory({ name });
           this.categories.push(newCategory);

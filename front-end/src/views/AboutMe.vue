@@ -23,13 +23,13 @@
             <p>Basic student information for COMP1842.</p>
           </div>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="user circle icon"></i>
         </span>
       </div>
 
       <div class="about-profile">
-        <div class="about-avatar" aria-hidden="true">
+        <div class="about-avatar">
           <i class="graduation cap icon"></i>
         </div>
 
@@ -77,7 +77,7 @@
             <p>Written from the source code that is currently in the project.</p>
           </div>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="info circle icon"></i>
         </span>
       </div>
@@ -105,7 +105,7 @@
             <p>Only technologies confirmed in the current source code are listed here.</p>
           </div>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="code icon"></i>
         </span>
       </div>
@@ -127,7 +127,7 @@
             <p>CRUD features found in routes, views, components, and controllers.</p>
           </div>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="tasks icon"></i>
         </span>
       </div>
@@ -157,7 +157,7 @@
             <p>Features implemented beyond basic CRUD operations.</p>
           </div>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="plus square outline icon"></i>
         </span>
       </div>
@@ -180,7 +180,7 @@
               <p>Reflection based on real architecture.</p>
             </div>
           </div>
-          <span class="workspace-panel-icon" aria-hidden="true">
+          <span class="workspace-panel-icon">
             <i class="lightbulb icon"></i>
           </span>
         </div>
@@ -201,7 +201,7 @@
               <p>A short goal for continued learning.</p>
             </div>
           </div>
-          <span class="workspace-panel-icon" aria-hidden="true">
+          <span class="workspace-panel-icon">
             <i class="flag checkered icon"></i>
           </span>
         </div>

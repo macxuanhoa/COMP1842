@@ -34,9 +34,8 @@
               placeholder="Enter new category name (e.g. Travel, Business, Food)..."
               v-model.trim="newCategoryName"
               minlength="2"
-              maxlength="40"
-              required
-            />
+              maxlength="30"
+              required/>
             <button class="ui primary button" type="submit">
               Add Category
             </button>
@@ -52,7 +51,7 @@
           <h2>Saved categories</h2>
           <p>{{ categories.length }} total {{ categories.length === 1 ? 'category' : 'categories' }} in your collection</p>
         </div>
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="table icon"></i>
         </span>
       </div>
@@ -93,8 +92,6 @@
                       v-model.trim="editingCategoryName"
                       minlength="2"
                       maxlength="40"
-                      @keyup.enter="saveCategoryEdit(category._id)"
-                      @keyup.esc="cancelCategoryEdit"
                       placeholder="Enter category name..."
                     />
                   </div>
@@ -138,7 +135,6 @@
                     <button
                       type="button"
                       class="ui icon mini basic primary button"
-                      aria-label="Edit category"
                       title="Edit category"
                       @click="startCategoryEdit(category)"
                     >
@@ -147,7 +143,6 @@
                     <button
                       type="button"
                       class="ui icon mini basic negative button"
-                      aria-label="Delete category"
                       title="Delete category"
                       @click="deleteCategoryItem(category)"
                     >
@@ -259,7 +254,7 @@ export default {
   methods: {
     // Focus vào ô input tạo category mới
     focusNewCategoryInput() {
-      this.$refs.newCategoryInput?.focus();
+      this.$refs.newCategoryInput.focus();
     },
     // ── Phân trang ───────────────────────────────────────────────────
     nextPage() {
@@ -279,7 +274,7 @@ export default {
     getWordsUsingCategory(categoryId) {
       return this.words.filter(
         word => word.category._id === categoryId
-      ).length;
+      ).length; 
     },
     // Load categories + words từ API
     async loadPageData() {
@@ -315,8 +310,8 @@ export default {
     },
     // Bắt đầu chỉnh sửa inline 1 dòng
     startCategoryEdit(category) {
-      this.editingCategoryId = category._id;
-      this.editingCategoryName = category.name;
+      this.editingCategoryId = category._id; //lưu category đó lại và chuyển hết lên v-if="editingCategoryId === category._id"
+      this.editingCategoryName = category.name; //Lấy tên hiện tại của Category đưa vào ô input: <input v-model="editingCategoryName">
     },
     // Hủy chỉnh sửa inline
     cancelCategoryEdit() {

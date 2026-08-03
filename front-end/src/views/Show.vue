@@ -29,7 +29,6 @@
           type="button"
           class="word-detail-favourite"
           :class="{ active: word.favourite }"
-          :aria-label="word.favourite ? 'Remove from favourites' : 'Add to favourites'"
           title="Toggle favourite"
           @click="toggleFavourite"
         >

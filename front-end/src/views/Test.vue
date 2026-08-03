@@ -21,7 +21,7 @@
       <section class="ui segment workspace-panel">
         <div class="workspace-panel-heading">
           <div class="workspace-panel-title">
-            <span class="workspace-panel-icon green" aria-hidden="true">
+            <span class="workspace-panel-icon green">
               <i class="sliders horizontal icon"></i>
             </span>
             <div>
@@ -81,7 +81,7 @@
             <label>Custom amount</label>
             <input
               type="number"
-              min="1"
+              min="5"
               :max="availableWordCount"
               v-model.number="customQuestionCount"
               placeholder="Enter a number"
@@ -150,13 +150,10 @@ export default {
     availableWords() {
       if (this.selectedWordSet === 'all') return this.words;
       if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite);
-      if (this.selectedWordSet === 'category') {
-        if (!this.selectedCategoryId) return [];
-        return this.words.filter(
-          word => word.category._id === this.selectedCategoryId
-        );
-      }
-      return this.words;
+
+      // selectedWordSet === 'category'
+      if (!this.selectedCategoryId) return [];
+      return this.words.filter(word => word.category._id === this.selectedCategoryId);
     },
     availableWordCount() {
       return this.availableWords.length;
@@ -178,12 +175,6 @@ export default {
       if (Number(this.customQuestionCount) > newMax) {
         this.customQuestionCount = newMax;
       }
-    },
-    customQuestionCount(newValue) {
-      const enteredQuestionCount = Number(newValue);
-      if (!Number.isFinite(enteredQuestionCount)) {
-        this.customQuestionCount = Math.min(5, this.availableWordCount || 5);
-      }
     }
   },
   // Khi mount: load words + categories, kiểm tra retake từ Dashboard
@@ -202,7 +193,7 @@ export default {
           this.isSessionActive = true;
         }
       }
-    } catch (error) {
+    } catch {
       this.flash('Failed to load test data.', 'error');
     }
   },
@@ -221,6 +212,7 @@ export default {
     // Khởi động quiz: chọn ngẫu nhiên số câu hỏi từ danh sách từ khả dụng
     startTest() {
       let questionLimit = this.availableWordCount;
+
       if (this.selectedWordSet !== 'category') {
         if (this.selectedQuestionCount === 'custom') {
           questionLimit = Number(this.customQuestionCount);
@@ -228,9 +220,8 @@ export default {
           questionLimit = Number(this.selectedQuestionCount);
         }
       }
-      if (!Number.isFinite(questionLimit) || questionLimit < 1) {
-        questionLimit = this.availableWordCount;
-      }
+
+      // Chặn trên không vượt quá số từ hiện có (đề phòng DevTools bypass nút disabled)
       questionLimit = Math.min(questionLimit, this.availableWordCount);
 
       const randomWords = [...this.availableWords]

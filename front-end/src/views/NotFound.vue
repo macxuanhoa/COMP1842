@@ -1,7 +1,7 @@
 <template>
   <div class="workspace-page not-found-page">
     <section class="ui segment workspace-panel not-found-panel">
-      <span class="not-found-icon" aria-hidden="true">
+      <span class="not-found-icon">
         <i class="compass outline icon"></i>
       </span>
       <span class="not-found-code">404</span>

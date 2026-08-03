@@ -22,7 +22,7 @@
           <p>Narrow the library without changing your saved words.</p>
         </div>
 
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="filter icon"></i>
         </span>
       </div>
@@ -91,7 +91,7 @@
           </p>
         </div>
 
-        <span class="workspace-panel-icon" aria-hidden="true">
+        <span class="workspace-panel-icon">
           <i class="table icon"></i>
         </span>
       </div>
@@ -164,7 +164,6 @@
                       type="button"
                       class="language-audio-button"
                       title="Listen English pronunciation"
-                      aria-label="Listen English pronunciation"
                       @click.stop="speakWord(word.english, 'en-US')"
                     >
                       <i class="volume up icon"></i>
@@ -183,7 +182,6 @@
                       type="button"
                       class="language-audio-button"
                       title="Listen German pronunciation"
-                      aria-label="Listen German pronunciation"
                       @click.stop="speakWord(word.german, 'de-DE')"
                     >
                       <i class="volume up icon"></i>
@@ -202,7 +200,6 @@
                       type="button"
                       class="language-audio-button"
                       title="Listen French pronunciation"
-                      aria-label="Listen French pronunciation"
                       @click.stop="speakWord(word.french, 'fr-FR')"
                     >
                       <i class="volume up icon"></i>
@@ -222,7 +219,6 @@
                     <router-link
                       :to="{ name: 'show', params: { id: word._id } }"
                       class="ui icon mini basic button"
-                      aria-label="View word"
                       title="View word"
                     >
                       <i class="eye icon"></i>
@@ -231,7 +227,6 @@
                     <router-link
                       :to="{ name: 'edit', params: { id: word._id } }"
                       class="ui icon mini basic primary button"
-                      aria-label="Edit word"
                       title="Edit word"
                     >
                       <i class="edit icon"></i>
@@ -240,7 +235,6 @@
                     <button
                       type="button"
                       class="ui icon mini basic negative button"
-                      aria-label="Delete word"
                       title="Delete word"
                       @click="deleteWordItem(word)"
                     >
