@@ -12,9 +12,9 @@
           <i class="close icon"></i>
           Exit
         </button>
-      </div>
+      </div> 
 
-      <div class="learning-progress-meta">
+      <div v-if="!isTestOver" class="learning-progress-meta">
         <span>
           <strong>Question</strong>
           {{ answeredCount + 1 > totalQuestions ? totalQuestions : answeredCount + 1 }} of {{ totalQuestions }}
@@ -24,7 +24,7 @@
           <span class="ui green text">{{ score }}</span> / {{ totalQuestions }}
         </span>
       </div>
-      <div class="ui tiny progress success learning-progress">
+      <div v-if="!isTestOver" class="ui tiny progress success learning-progress">
         <div class="bar" :style="{ width: progressPercent + '%' }"></div>
       </div>
 
@@ -86,11 +86,15 @@
       </form>
 
       <div v-else class="quiz-complete">
-        <span class="quiz-complete-icon">
-          <i class="trophy icon"></i>
-        </span>
-        <h3>Quiz Completed!</h3>
-        <p>You scored {{ score }} out of {{ totalQuestions }} ({{ scorePercent }}%).</p>
+        <div class="quiz-result-header">
+          <span class="quiz-result-icon">
+            <i class="trophy icon"></i>
+          </span>
+          <div>
+            <h3>Quiz Completed!</h3>
+            <p>You scored <strong>{{ score }}</strong> out of <strong>{{ totalQuestions }}</strong> ({{ scorePercent }}%).</p>
+          </div>
+        </div>
 
         <div v-if="wrongAnswers.length > 0" class="quiz-review">
           <h4><i class="attention icon"></i> Needs review</h4>
@@ -112,21 +116,23 @@
               </tbody>
             </table>
           </div>
-
-          <button
-            class="ui primary button icon labeled"
-            @click="$emit('retakeWrong', wrongAnswers.map(wrongAnswer => wrongAnswer.word._id))"
-          >
-            <i class="redo icon"></i> Retake Wrong Answers
-          </button>
         </div>
         <div v-else class="ui success message quiz-perfect">
           <i class="thumbs up outline icon"></i> Perfect score! Outstanding job!
         </div>
 
-        <button class="ui primary button icon labeled" @click="$emit('exitTest')">
-          <i class="arrow left icon"></i> Back to Setup
-        </button>
+        <div class="quiz-complete-actions">
+          <button
+            v-if="wrongAnswers.length > 0"
+            class="ui primary button icon labeled"
+            @click="$emit('retakeWrong', wrongAnswers.map(wrongAnswer => wrongAnswer.word._id))"
+          >
+            <i class="redo icon"></i> Retake Wrong Answers
+          </button>
+          <button class="ui basic primary button icon labeled" @click="$emit('exitTest')">
+            <i class="arrow left icon"></i> Back to Setup
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -324,50 +330,73 @@ export default {
   background-color: #ef4444 !important;
 }
 .quiz-complete {
-  padding: 1.5rem 0 0.5rem;
-  text-align: center;
+  padding: 0;
 }
-.quiz-complete-icon {
-  display: inline-flex;
-  width: 56px;
-  height: 56px;
+.quiz-result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  background: #ecfdf5;
+}
+.quiz-result-icon {
+  display: flex;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   color: #10b981;
-  background: #ecfdf5;
+  background: #ffffff;
   border: 2px solid #a7f3d0;
-  font-size: 1.5rem;
+  font-size: 1rem;
 }
-.quiz-complete h3 {
-  margin: 1rem 0 0.35rem;
+.quiz-result-icon .icon {
+  margin: 0 !important;
+}
+.quiz-result-header h3 {
+  margin: 0;
   color: #0f172a;
-  font-size: 1.4rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
-.quiz-complete > p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.95rem;
+.quiz-result-header p {
+  margin: 0.1rem 0 0;
+  color: #475569;
+  font-size: 0.82rem;
 }
 .quiz-review {
-  max-width: 620px;
-  margin: 1.5rem auto;
-  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.85rem;
   border: 1px solid #fecaca;
   border-radius: 8px;
   background: #fef2f2;
   text-align: left;
 }
 .quiz-review h4 {
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.5rem;
   color: #991b1b;
+  font-size: 0.82rem;
   font-weight: 700;
+}
+.quiz-review-table {
+  max-height: 210px;
+  overflow-y: auto;
+  border-radius: 6px;
 }
 .quiz-review-table .ui.table {
   width: 100%;
   margin: 0;
   border-radius: 6px;
+}
+.quiz-review-table .ui.table td,
+.quiz-review-table .ui.table th {
+  padding: 0.45rem 0.7rem !important;
+  font-size: 0.84rem;
 }
 .quiz-review-guess {
   text-decoration: line-through;
@@ -375,7 +404,14 @@ export default {
 }
 .quiz-perfect {
   display: block;
-  max-width: 500px;
-  margin: 1.5rem auto !important;
+  margin: 0 0 0.75rem !important;
+}
+.quiz-complete-actions {
+  display: flex;
+  gap: 0.65rem;
+}
+.quiz-complete-actions .ui.button {
+  flex: 1;
+  margin: 0;
 }
 </style>
