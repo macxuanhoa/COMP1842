@@ -112,6 +112,13 @@
               </tbody>
             </table>
           </div>
+
+          <button
+            class="ui primary button icon labeled"
+            @click="$emit('retakeWrong', wrongAnswers.map(wrongAnswer => wrongAnswer.word._id))"
+          >
+            <i class="redo icon"></i> Retake Wrong Answers
+          </button>
         </div>
         <div v-else class="ui success message quiz-perfect">
           <i class="thumbs up outline icon"></i> Perfect score! Outstanding job!
@@ -136,8 +143,8 @@ export default {
     answerLanguage: { type: String, default: 'english' }   // ngôn ngữ câu trả lời
   },
   data() {
-    return {
-      randomizedWords: this.shuffleArray([...this.words]), // Fisher-Yates xáo trộn
+    return {  
+      remainingWords: [...this.words], // sao chép danh sách đã được cha xáo trộn sẵn
       wrongAnswers: [],     // danh sách câu trả lời sai (để review cuối)
       userAnswer: '',       // câu trả lời hiện tại của user
       score: 0,             // số câu đúng
@@ -156,7 +163,7 @@ export default {
   },
   computed: {
     currentWord() {
-      return this.randomizedWords.length ? this.randomizedWords[0] : null;
+      return this.remainingWords.length ? this.remainingWords[0] : null;
     },
     progressPercent() {
       return Math.round((this.answeredCount / this.totalQuestions) * 100) || 0;
@@ -187,16 +194,6 @@ export default {
     });
   },
   methods: {
-    // ── Fisher-Yates shuffle: xáo trộn mảng công bằng, không thiên vị ─
-    shuffleArray(array) {
-      for (let currentIndex = array.length - 1; currentIndex > 0; currentIndex--) {
-        const randomIndex = Math.floor(Math.random() * (currentIndex + 1));
-        const temp = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temp;
-      }
-      return array;
-    },
 
     // Kiểm tra câu trả lời (so sánh không phân biệt hoa/thường, bỏ khoảng trắng)
     submitAnswer() {
@@ -216,12 +213,14 @@ export default {
     },
     // Lưu kết quả quiz vào localStorage (giữ tối đa 50 lần gần nhất)
     saveResult() {
+      const wrongWordIds = this.wrongAnswers.map(wrongAnswer => wrongAnswer.word._id);
       const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
       history.unshift({
         score: this.score,
         total: this.totalQuestions,
         timestamp: new Date().toISOString(),
-        wordIds: this.words.map(word => word._id)
+        wordIds: this.words.map(word => word._id),
+        wrongWordIds: wrongWordIds
       });
       if (history.length > 50) {
         history.pop();
@@ -234,9 +233,9 @@ export default {
       this.feedback = null;
       this.isWaitingNext = false;
       this.userAnswer = '';
-      this.randomizedWords.shift();
+      this.remainingWords.shift();
 
-      if (this.randomizedWords.length === 0) {
+      if (this.remainingWords.length === 0) {
         this.isTestOver = true;
         this.saveResult();
       } else {

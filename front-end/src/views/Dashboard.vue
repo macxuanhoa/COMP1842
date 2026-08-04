@@ -151,11 +151,13 @@ export default {
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
     },
-    // Làm lại bài test với cùng bộ từ của lần quiz cũ
+    // Làm lại bài test với các từ sai của lần quiz cũ (qua URL query)
     retakeTest(attempt) {
-      if (attempt.wordIds && attempt.wordIds.length) {
-        sessionStorage.setItem('retake_word_ids', JSON.stringify(attempt.wordIds));
-        this.$router.push('/test');
+      const ids = attempt.wrongWordIds && attempt.wrongWordIds.length
+        ? attempt.wrongWordIds
+        : attempt.wordIds;
+      if (ids && ids.length) {
+        this.$router.push({ path: '/test', query: { retake: ids.join(',') } });
       }
     }
   }

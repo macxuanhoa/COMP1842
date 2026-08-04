@@ -1,6 +1,6 @@
 <template>
   <div class="workspace-page">
-    <div v-if="!isSessionActive">
+    <div v-if="!isSessionActive"> <!-- Nếu chưa bắt đầu bài test -> setup -->
       <header class="workspace-header">
         <div>
           <div class="workspace-eyebrow">
@@ -62,13 +62,13 @@
             <label>Category</label>
             <select class="ui dropdown fluid" v-model="selectedCategoryId">
               <option value="">Choose a category…</option>
-              <option v-for="category in categories" :key="category._id" :value="category._id">
+              <option v-for="category in categories" :key="category._id" :value="category._id"> <!-- Ban đầu: selectedCategoryId: '' -> Choose a category… -->
                 {{ category.name }} ({{ words.filter(word => word.category._id === category._id).length }} words)
               </option>
             </select>
           </div>
 
-          <div v-if="selectedWordSet !== 'category'" class="field">
+          <div v-if="selectedWordSet !== 'category'" class="field"> <!-- là All và fav -->
             <label>Number of questions</label>
             <select class="ui dropdown fluid" v-model="selectedQuestionCount">
               <option value="all">All ({{ availableWordCount }} words)</option>
@@ -77,27 +77,26 @@
             </select>
           </div>
 
-          <div v-if="selectedQuestionCount === 'custom' && selectedWordSet !== 'category'" class="field">
+          <div v-if="selectedQuestionCount === 'custom'" class="field">
             <label>Custom amount</label>
             <input
               type="number"
-              min="5"
-              :max="availableWordCount"
               v-model.number="customQuestionCount"
               placeholder="Enter a number"
             />
           </div>
-
+          
+          <!-- Nút sẽ bị khóa khi: Có ít hơn 5 từ hoặc số câu hỏi nhập vào không hợp lệ -->
           <button
             class="ui primary fluid large button icon labeled"
-            :disabled="availableWordCount < 5 || !hasValidQuestionCount"
+            :disabled="availableWordCount < 5 || !hasValidQuestionCount" 
             @click="startTest"
           >
             <i class="play icon"></i> Start Test
           </button>
         </div>
 
-        <div v-if="availableWordCount === 0" class="ui warning message">
+        <div v-if="availableWordCount === 0" class="ui warning message"> 
           <i class="attention icon"></i>
           No words available in this selection. Add some words first.
         </div>
@@ -110,10 +109,12 @@
 
     <div v-else>
       <vocab-test
+        :key="sessionKey"
         :words="testWords"
         :question-language="questionLanguage"
         :answer-language="answerLanguage"
         @exitTest="exitTest"
+        @retakeWrong="retakeWrongAnswers"
       ></vocab-test>
     </div>
   </div>
@@ -139,57 +140,53 @@ export default {
       selectedQuestionCount: 'all', // số câu: 'all' | 5 | 10 | 20 | 'custom'
       customQuestionCount: 5,     // số câu tùy chỉnh
       isSessionActive: false,     // đang trong phiên quiz
-      testWords: []               // danh sách từ đưa vào quiz
+      testWords: [],              // danh sách từ đưa vào quiz
+      sessionKey: 0               // key để force re-mount VocabTest khi retake
     };
   },
   computed: {
     // Số từ được đánh dấu yêu thích
-    favouriteWordCount() {
+    favouriteWordCount() { 
       return this.words.filter(word => word.favourite).length;
     },
-    availableWords() {
-      if (this.selectedWordSet === 'all') return this.words;
-      if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite);
-
-      // selectedWordSet === 'category'
-      if (!this.selectedCategoryId) return [];
-      return this.words.filter(word => word.category._id === this.selectedCategoryId);
+    selectedWords() { //1
+      if (this.selectedWordSet === 'all') return this.words; // Nếu chọn All words -> trả về tất cả từ
+      if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite); // Nếu chọn Favourites only -> trả về các từ favourite
+      if (!this.selectedCategoryId) return []; // Nếu chọn By category nhưng chưa chọn category cụ thể -> trả về mảng rỗng, selectedCategoryId = '' --> hasvalidQuestionCount = false --> nút Start Test bị khóa
+      return this.words.filter(word => word.category._id === this.selectedCategoryId); // Nếu chọn By category -> lọc từ theo category đã chọn
     },
-    availableWordCount() {
-      return this.availableWords.length;
+    availableWordCount() { //2
+      return this.selectedWords.length;
     },
     // Các lựa chọn số câu hỏi preset
     questionSizeOptions() {
       return [5, 10, 20].filter(count => count <= this.availableWordCount);
     },
     // Kiểm tra số câu hỏi nhập vào có hợp lệ không
-    hasValidQuestionCount() {
-      if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true;
+    hasValidQuestionCount() { 
+      if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true; // Nếu không có trường tự điền thì không cần kiểm tra số tự nhập
       const enteredQuestionCount = Number(this.customQuestionCount);
-      return Number.isFinite(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount;
+      return Number.isInteger(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount; //Dòng này trả về true khi cả 3 điều kiện đều đúng
     }
   },
-  watch: {
-    // Nếu số từ khả dụng giảm → điều chỉnh customQuestionCount
-    availableWordCount(newMax) {
-      if (Number(this.customQuestionCount) > newMax) {
+  watch: { //selectedWords 1/3, ex: all= có 10 từ --> availableWordCount = 10 --> đổi sang fav = 3 từ --> availableWordCount = 3 --> 
+    availableWordCount(newMax) { 
         this.customQuestionCount = newMax;
-      }
     }
   },
-  // Khi mount: load words + categories, kiểm tra retake từ Dashboard
+  // Khi mount: load words + categories, kiểm tra retake từ URL query
   async mounted() {
     try {
       this.words = await getWords();
       this.categories = await getCategories();
 
-      const retakeIds = sessionStorage.getItem('retake_word_ids');
-      if (retakeIds) {
-        sessionStorage.removeItem('retake_word_ids');
-        const retakeWordIds = JSON.parse(retakeIds);
+      // Đọc danh sách ID từ URL query (?retake=id1,id2,id3)
+      const retakeParam = this.$route.query.retake;
+      if (retakeParam) {
+        const retakeWordIds = retakeParam.split(',');
         const retakeWords = this.words.filter(word => retakeWordIds.includes(word._id));
         if (retakeWords.length > 0) {
-          this.testWords = retakeWords;
+          this.testWords = retakeWords; //Đưa các từ đó vào bài test
           this.isSessionActive = true;
         }
       }
@@ -225,7 +222,7 @@ export default {
       let questionLimit = this.availableWordCount;
 
       if (this.selectedWordSet !== 'category') {
-        if (this.selectedQuestionCount === 'custom') {
+        if (this.selectedQuestionCount === 'custom') { // 1 trong 2(else if)
           questionLimit = Number(this.customQuestionCount);
         } else if (this.selectedQuestionCount !== 'all') {
           questionLimit = Number(this.selectedQuestionCount);
@@ -235,14 +232,27 @@ export default {
       // Chặn trên không vượt quá số từ hiện có (đề phòng DevTools bypass nút disabled)
       questionLimit = Math.min(questionLimit, this.availableWordCount);
 
-      const shuffledWords = this.shuffleArray([...this.availableWords]);
+      const shuffledWords = this.shuffleArray([...this.selectedWords]); //gọi lại thuật toán
       this.testWords = shuffledWords.slice(0, questionLimit);
       this.isSessionActive = true;
     },
+    // Làm lại quiz chỉ với các từ sai (nút Retake trong VocabTest)
+    retakeWrongAnswers(wrongWordIds) {
+      const retakeWords = this.words.filter(word => wrongWordIds.includes(word._id));
+      if (retakeWords.length > 0) {
+        this.testWords = retakeWords;
+        this.sessionKey++;
+      }
+    },
+
     // Thoát quiz, quay về màn hình thiết lập
     exitTest() {
       this.isSessionActive = false;
-      this.testWords = [];
+      this.testWords = []; // Xóa danh sách từ của bài test cũ, tránh lần sau dùng lại dữ liệu cũ
+      // Xoá query param retake khỏi URL sau khi thoát
+      if (this.$route.query.retake) {
+        this.$router.replace({ path: '/test' });
+      }// Mục đích: khi thoát bài test, xóa danh sách ID từ sai khỏi URL để lần sau không tự mở lại bài Retake cũ. replace thay URL hiện tại, không thêm một trang mới vào lịch sử trình duyệt.
     }
   }
 };
