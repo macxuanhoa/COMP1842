@@ -36,6 +36,7 @@
 // ── Component gốc của ứng dụng ──────────────────────────────────────
 // Chứa thanh navigation (navbar) + flash message + router-view
 export default {
+  // Khai báo tên định danh của component gốc
   name: 'app'
 };
 </script>

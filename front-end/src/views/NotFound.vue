@@ -23,6 +23,7 @@
 // ── Trang 404 ────────────────────────────────────────────────────────
 // Hiển thị khi người dùng truy cập URL không tồn tại
 export default {
+  // Tên của component hiển thị giao diện báo lỗi không tìm thấy trang (404)
   name: 'not-found'
 };
 </script>

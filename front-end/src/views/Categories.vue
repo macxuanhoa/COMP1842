@@ -210,6 +210,7 @@ import {
 
 export default {
   name: 'categories',
+  // Khởi tạo các biến trạng thái dữ liệu của trang quản lý danh mục
   data() {
     return {
       categories: [],          // danh sách tất cả category
@@ -248,6 +249,7 @@ export default {
       }
     }
   },
+  // Lifecycle hook mounted: Gọi hàm tải dữ liệu trang khi component được gắn vào DOM
   mounted() {
     this.loadPageData();
   },
@@ -257,16 +259,19 @@ export default {
       this.$refs.newCategoryInput.focus();
     },
     // ── Phân trang ───────────────────────────────────────────────────
+    // Chuyển sang trang kế tiếp
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
+    // Trở về trang trước đó
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
     },
+    // Nhảy đến trang được chọn
     goToPage(page) {
       this.currentPage = page;
     },
@@ -332,6 +337,7 @@ export default {
       }
     },
     // ── Xóa category (chỉ khi không có từ nào dùng nó) ──────────────
+    // Xóa category theo ID sau khi kiểm tra không có từ vựng liên kết và được người dùng xác nhận
     async deleteCategoryItem(category) {
       // 1. Kiểm tra còn từ nào dùng category này không
       const wordsCount = this.getWordsUsingCategory(category._id);

@@ -114,11 +114,13 @@ import { getWord, updateWord, deleteWord } from '../helpers/helpers';
 
 export default {
   name: 'show',
+  // Khởi tạo đối tượng word chứa dữ liệu chi tiết của từ vựng
   data() {
     return {
       word: null // dữ liệu word load từ API
     };
   },
+  // Hook mounted: Gọi API để tải thông tin chi tiết từ vựng theo ID trên URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
@@ -135,6 +137,7 @@ export default {
       window.speechSynthesis.speak(utterance);
     },
     // ── Bật/tắt yêu thích ──────────────────────────────────────────
+    // Bật hoặc tắt trạng thái yêu thích của từ vựng và cập nhật lên server
     async toggleFavourite() {
       try {
         const updatedWord = await updateWord({
@@ -158,6 +161,7 @@ export default {
     },
 
     // ── Xóa từ sau khi xác nhận ────────────────────────────────────
+    // Xóa từ vựng khỏi cơ sở dữ liệu và chuyển về trang danh sách
     async deleteWordItem() {
       const confirmed = window.confirm('Are you sure you want to delete this word?');
       if (!confirmed) return;

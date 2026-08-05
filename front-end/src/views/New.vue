@@ -36,6 +36,7 @@ import { createWord } from '../helpers/helpers';
 
 export default {
   name: 'new-word',
+  // Đăng ký component con WordForm dùng để hiển thị form nhập thông tin từ vựng
   components: { 'word-form': WordForm },
   methods: {
     // Nhận dữ liệu từ WordForm, gọi API tạo word mới

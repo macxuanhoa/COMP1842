@@ -300,6 +300,7 @@ import {
 
 export default {
   name: 'words',
+  // Khởi tạo các trạng thái dữ liệu cho trang thư viện từ vựng
   data() {
     return {
       words: [],                   // tất cả words từ database
@@ -326,7 +327,7 @@ export default {
     }
   },
   computed: {
-    // filteredWords = bản sao dữ liệu + (lọc + sắp xếp) --> sau đó return dữ liệu cuối cùng
+    // Computed property lọc và sắp xếp từ vựng: filteredWords = bản sao dữ liệu + (lọc + sắp xếp) --> sau đó return dữ liệu cuối cùng
     filteredWords() {
       const searchValue = this.searchText.trim().toLowerCase();
       let result = [...this.words];
@@ -360,13 +361,16 @@ export default {
       return result;
     },
     // ── Phân trang ───────────────────────────────────────────────────
+    // Computed property tính tổng số trang dựa trên danh sách từ vựng đã lọc và kích thước trang (8 từ/trang)
     totalPages() { //tính xem cần bao nhiêu trang (quy định 8 từ/trang)
       return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
     },
+    // Lấy danh sách từ vựng hiển thị ở trang hiện tại (theo phân trang)
     visibleWords() {  //khi đang ở trang nào thì lấy đúng nhóm từ của trang đó (0-8, 8-16, 16-24,...)
       const start = (this.currentPage - 1) * this.pageSize; //start từ kết quả ví dụ 8, 16, 24,25,26... (tùy trang)
       return this.filteredWords.slice(start, start + this.pageSize); 
     },
+    // Tạo chuỗi tóm tắt vị trí hiển thị và tổng số từ vựng
     paginationSummary() {
       const total = this.filteredWords.length;
       if (total === 0) return '0 words';
@@ -379,6 +383,7 @@ export default {
       return `Showing ${start}–${end} of ${total} words`;
     }
   },
+  // Lifecycle hook mounted: khi mount: gọi hàm loadPageData để tải dữ liệu từ server
   mounted() {
     this.loadPageData();
   },
@@ -387,16 +392,19 @@ export default {
     resetPage() {
       this.currentPage = 1;
     },
+    // Chuyển sang trang tiếp theo
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
+    // Quay lại trang trước đó
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
     },
+    // Chuyển đến trang được chỉ định
     goToPage(page) {
       this.currentPage = page; // tính lại currentPage ở visib
     },
@@ -422,6 +430,7 @@ export default {
     },
 
     // ── Bật/tắt yêu thích ──────────────────────────────────────────
+    // Bật hoặc tắt trạng thái yêu thích của từ vựng và cập nhật lên server
     async toggleFavourite(word) {
       try {
         // Gửi trạng thái ngược lại lên server
@@ -447,6 +456,7 @@ export default {
     },
 
     // ── Xóa từ sau khi xác nhận ────────────────────────────────────
+    // Xóa từ vựng khỏi cơ sở dữ liệu sau khi người dùng xác nhận
     async deleteWordItem(wordToDelete) {
       // 1. Hỏi xác nhận
       const confirmed = window.confirm('Are you sure you want to delete this word?');

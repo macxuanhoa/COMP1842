@@ -216,10 +216,15 @@
 </template>
 
 <script>
+// ── Trang About Me ───────────────────────────────────────────────────
+// Hiển thị thông tin sinh viên, tổng quan công nghệ và các tính năng dự án
 export default {
+  // Tên của component
   name: 'about-me',
+  // Khởi tạo các danh sách dữ liệu tĩnh cho trang giới thiệu (công nghệ, tính năng cốt lõi, tính năng mở rộng)
   data() {
     return {
+      // Danh sách các công nghệ được sử dụng thực tế trong cả Frontend, Backend và Database
       technologies: [
         {
           name: 'Vue.js 2',
@@ -258,6 +263,7 @@ export default {
           description: 'Defines schemas and communicates with MongoDB collections.'
         }
       ],
+      // Danh sách các tính năng cốt lõi về quản lý từ vựng (CRUD Word)
       coreWordFeatures: [
         'Create a new vocabulary word with German, English, and French translations.',
         'View the vocabulary library.',
@@ -265,12 +271,14 @@ export default {
         'Edit an existing word.',
         'Delete a word.'
       ],
+      // Danh sách các tính năng cốt lõi về quản lý danh mục (CRUD Category)
       coreCategoryFeatures: [
         'Create a new category.',
         'View the category list.',
         'Rename an existing category.',
         'Delete an unused category.'
       ],
+      // Danh sách các tính năng bổ sung nâng cao được phát triển trong dự án
       additionalFeatures: [
         {
           title: 'Search, Filter, and Sort',

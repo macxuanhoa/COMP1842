@@ -127,86 +127,95 @@ import { getWords, getCategories } from '../helpers/helpers';
 import VocabTest from '../components/VocabTest.vue';
 
 export default {
+  // Tên của component
   name: 'test',
+  // Khai báo các component con được sử dụng trong template
   components: { 'vocab-test': VocabTest },
+  // Khởi tạo các biến dữ liệu cho trang thiết lập bài kiểm tra
   data() {
     return {
-      words: [],                  // tất cả từ trong database
-      categories: [],             // tất cả category
-      questionLanguage: 'german', // ngôn ngữ câu hỏi (mặc định: hỏi tiếng Đức)
-      answerLanguage: 'english',  // ngôn ngữ trả lời (mặc định: trả lời tiếng Anh)
-      selectedWordSet: 'all',     // bộ từ: 'all' | 'fav' | 'category'
-      selectedCategoryId: '',       // category đã chọn (khi wordSet = 'category')
-      selectedQuestionCount: 'all', // số câu: 'all' | 5 | 10 | 20 | 'custom'
-      customQuestionCount: 5,     // số câu tùy chỉnh
-      isSessionActive: false,     // đang trong phiên quiz
-      testWords: [],              // danh sách từ đưa vào quiz
-      sessionKey: 0               // key để force re-mount VocabTest khi retake
+      words: [],                  // Danh sách tất cả các từ vựng lấy từ cơ sở dữ liệu
+      categories: [],             // Danh sách tất cả các danh mục bài học lấy từ cơ sở dữ liệu
+      questionLanguage: 'german', // Ngôn ngữ hiển thị câu hỏi (mặc định: 'german' - tiếng Đức)
+      answerLanguage: 'english',  // Ngôn ngữ yêu cầu người dùng trả lời (mặc định: 'english' - tiếng Anh)
+      selectedWordSet: 'all',     // Phạm vi bộ từ được chọn: 'all' (tất cả), 'fav' (yêu thích), 'category' (theo danh mục)
+      selectedCategoryId: '',     // ID danh mục được chọn khi selectedWordSet = 'category'
+      selectedQuestionCount: 'all', // Số lượng câu hỏi được chọn: 'all', 5, 10, 20 hoặc 'custom'
+      customQuestionCount: 5,     // Số lượng câu hỏi tự nhập do người dùng tùy chỉnh
+      isSessionActive: false,     // Trạng thái phiên làm bài test: true = đang trong quiz, false = ở màn hình cài đặt
+      testWords: [],              // Danh sách các từ vựng ngẫu nhiên được chọn để đưa vào bài test hiện tại
+      sessionKey: 0               // Khóa duy nhất (key) dùng để ép re-mount lại VocabTest khi thực hiện retake
     };
   },
   computed: {
-    // Số từ được đánh dấu yêu thích
+    // Tính tổng số lượng từ vựng được đánh dấu yêu thích (favourite)
     favouriteWordCount() { 
       return this.words.filter(word => word.favourite).length;
     },
-    selectedWords() { //1
-      if (this.selectedWordSet === 'all') return this.words; // Nếu chọn All words -> trả về tất cả từ
-      if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite); // Nếu chọn Favourites only -> trả về các từ favourite
-      if (!this.selectedCategoryId) return []; // Nếu chọn By category nhưng chưa chọn category cụ thể -> trả về mảng rỗng, selectedCategoryId = '' --> hasvalidQuestionCount = false --> nút Start Test bị khóa
-      return this.words.filter(word => word.category._id === this.selectedCategoryId); // Nếu chọn By category -> lọc từ theo category đã chọn
+    // Lọc danh sách từ dựa trên bộ từ đã chọn (Tất cả, Yêu thích, hoặc Theo danh mục cụ thể)
+    selectedWords() {
+      if (this.selectedWordSet === 'all') return this.words; // Nếu chọn tất cả từ vựng
+      if (this.selectedWordSet === 'fav') return this.words.filter(word => word.favourite); // Nếu chọn danh sách yêu thích
+      if (!this.selectedCategoryId) return []; // Nếu chọn theo danh mục nhưng chưa chọn danh mục cụ thể thì trả về mảng rỗng
+      return this.words.filter(word => word.category._id === this.selectedCategoryId); // Lọc các từ vựng thuộc danh mục đã chọn
     },
-    availableWordCount() { //2
+    // Tổng số lượng từ khả dụng trong bộ từ đã lọc hiện tại
+    availableWordCount() {
       return this.selectedWords.length;
     },
-    // Các lựa chọn số câu hỏi preset
+    // Các tùy chọn số câu hỏi preset (5, 10, 20) thỏa mãn điều kiện nhỏ hơn hoặc bằng số từ khả dụng
     questionSizeOptions() {
       return [5, 10, 20].filter(count => count <= this.availableWordCount);
     },
-    // Kiểm tra số câu hỏi nhập vào có hợp lệ không
+    // Kiểm tra tính hợp lệ của số câu hỏi tùy chỉnh do người dùng nhập vào
     hasValidQuestionCount() { 
-      if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true; // Nếu không có trường tự điền thì không cần kiểm tra số tự nhập
+      if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true; // Không dùng custom count thì luôn hợp lệ
       const enteredQuestionCount = Number(this.customQuestionCount);
-      return Number.isInteger(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount; //Dòng này trả về true khi cả 3 điều kiện đều đúng
+      return Number.isInteger(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount; // Kiểm tra số nguyên, từ 5 trở lên và không vượt quá số từ khả dụng
     }
   },
-  watch: { //selectedWords 1/3, ex: all= có 10 từ --> availableWordCount = 10 --> đổi sang fav = 3 từ --> availableWordCount = 3 --> 
+  watch: {
+    // Theo dõi sự thay đổi của số từ khả dụng để tự động cập nhật lại số câu hỏi custom mặc định
     availableWordCount(newMax) { 
         this.customQuestionCount = newMax;
     }
   },
-  // Khi mount: load words + categories, kiểm tra retake từ URL query
+  // Hook lifecycle mounted: Tải dữ liệu từ vựng & danh mục, đồng thời kiểm tra tham số retake từ URL query
   async mounted() {
     try {
+      // Gọi helper lấy danh sách từ vựng và danh mục từ API backend
       this.words = await getWords();
       this.categories = await getCategories();
 
-      // Đọc danh sách ID từ URL query (?retake=id1,id2,id3)
+      // Đọc danh sách ID từ vựng cần làm lại từ URL query (?retake=id1,id2,id3)
       const retakeParam = this.$route.query.retake;
       if (retakeParam) {
         const retakeWordIds = retakeParam.split(',');
         const retakeWords = this.words.filter(word => retakeWordIds.includes(word._id));
         if (retakeWords.length > 0) {
-          this.testWords = retakeWords; //Đưa các từ đó vào bài test
-          this.isSessionActive = true;
+          this.testWords = retakeWords; // Đưa danh sách từ sai vào bài test
+          this.isSessionActive = true;  // Bắt đầu phiên test ngay lập tức
         }
       }
     } catch {
+      // Hiển thị thông báo lỗi nếu tải dữ liệu thất bại
       this.flash('Failed to load test data.', 'error');
     }
   },
   methods: {
-    // Đảm bảo 2 ngôn ngữ hỏi/đáp không trùng nhau
+    // Xử lý sự kiện khi thay đổi ngôn ngữ câu hỏi: Đảm bảo ngôn ngữ câu hỏi và câu trả lời không bị trùng nhau
     onQuestionLanguageChange() {
       if (this.questionLanguage === this.answerLanguage) {
         this.answerLanguage = this.questionLanguage === 'german' ? 'english' : 'german';
       }
     },
+    // Xử lý sự kiện khi thay đổi ngôn ngữ câu trả lời: Đảm bảo ngôn ngữ câu trả lời và câu hỏi không bị trùng nhau
     onAnswerLanguageChange() {
       if (this.answerLanguage === this.questionLanguage) {
         this.questionLanguage = this.answerLanguage === 'german' ? 'english' : 'german';
       }
     },
-    // ── Fisher-Yates shuffle: xáo trộn mảng với độ ngẫu nhiên công bằng ─
+    // Thuật toán xáo trộn Fisher-Yates: Xáo trộn vị trí ngẫu nhiên các phần tử trong mảng
     shuffleArray(array) {
       for (let currentIndex = array.length - 1; currentIndex > 0; currentIndex--) {
         const randomIndex = Math.floor(Math.random() * (currentIndex + 1));
@@ -217,31 +226,31 @@ export default {
       return array;
     },
 
-    // Khởi động quiz: chọn ngẫu nhiên số câu hỏi từ danh sách từ khả dụng
+    // Bắt đầu bài test: Chọn ngẫu nhiên số lượng câu hỏi từ danh sách từ vựng khả dụng và kích hoạt phiên test
     startTest() {
       let questionLimit = this.availableWordCount;
 
       if (this.selectedWordSet !== 'category') {
-        if (this.selectedQuestionCount === 'custom') { // 1 trong 2(else if)
+        if (this.selectedQuestionCount === 'custom') { // Lấy số câu hỏi custom
           questionLimit = Number(this.customQuestionCount);
-        } else if (this.selectedQuestionCount !== 'all') {
+        } else if (this.selectedQuestionCount !== 'all') { // Lấy số câu hỏi từ option được chọn
           questionLimit = Number(this.selectedQuestionCount);
         }
       }
 
-      // Chặn trên không vượt quá số từ hiện có (đề phòng DevTools bypass nút disabled)
+      // Giới hạn số lượng câu hỏi không vượt quá tổng số từ khả dụng hiện có
       questionLimit = Math.min(questionLimit, this.availableWordCount);
 
-      const shuffledWords = this.shuffleArray([...this.selectedWords]); //gọi lại thuật toán
+      // Xáo trộn mảng từ vựng đã chọn và lấy số lượng câu hỏi theo giới hạn
+      const shuffledWords = this.shuffleArray([...this.selectedWords]);
       this.testWords = shuffledWords.slice(0, questionLimit);
       this.isSessionActive = true;
     },
-    // Làm lại quiz chỉ với các từ sai (nút Retake trong VocabTest)
+    // Làm lại bài test chỉ dành cho các câu trả lời sai (khi nhận event retakeWrong từ component VocabTest)
     retakeWrongAnswers(wrongWordIds) {
       const retakeWords = this.words.filter(word => wrongWordIds.includes(word._id));
       if (retakeWords.length > 0) {
         this.testWords = retakeWords;
-        this.sessionKey++;
       }
     },
 
@@ -256,4 +265,5 @@ export default {
     }
   }
 };
+
 </script>

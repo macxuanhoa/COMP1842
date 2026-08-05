@@ -84,44 +84,48 @@
 import { getCategories, createCategory } from '../helpers/helpers';
 
 export default {
+  // Tên của component
   name: 'WordForm',
+  // Các props nhận từ component cha (New.vue hoặc Edit.vue)
   props: {
-    // Dữ liệu word được truyền từ component cha (New.vue hoặc Edit.vue)
+    // Đối tượng dữ liệu từ vựng truyền từ ngoài vào để thêm mới hoặc chỉnh sửa
     word: {
       type: Object,
       default: () => ({
-        german: '',
-        english: '',
-        french: '',
-        category: '',
-        favourite: false
+        german: '',    // Từ tiếng Đức
+        english: '',   // Từ tiếng Anh
+        french: '',    // Từ tiếng Pháp
+        category: '',  // ID danh mục
+        favourite: false // Trạng thái yêu thích
       })
     }
   },
+  // Khởi tạo các biến trạng thái dữ liệu cho form nhập từ vựng
   data() {
     return {
-      categories: [],
-      selectedCategoryId: '',
-      errorMessage: '',
-      isAddingCategory: false,
-      newCategoryName: '',
-      isSubmitting: false
+      categories: [],          // Danh sách các danh mục khả dụng lấy từ API
+      selectedCategoryId: '',  // ID của danh mục đang được chọn trong dropdown
+      errorMessage: '',        // Chuỗi thông báo lỗi hiển thị trên đầu form nếu có
+      isAddingCategory: false, // Cờ bật/tắt chế độ nhập tên danh mục mới thay vì chọn sẵn
+      newCategoryName: '',     // Chuỗi tên danh mục mới khi người dùng đang ở chế độ tạo danh mục mới
+      isSubmitting: false      // Cờ trạng thái đang gửi form (dùng để vô hiệu hóa nút submit tránh spam)
     };
   },
-  // Khi component mount: tải danh sách category và đặt category hiện tại
+  // Hook lifecycle mounted: Tải danh sách danh mục từ API và thiết lập danh mục mặc định ban đầu
   async mounted() {
     try {
+      // Tải danh sách danh mục từ backend
       this.categories = await getCategories();
 
       if (this.word._id) {
-        // Edit mode: lấy _id từ object category đã populate
+        // Chế độ Edit: lấy _id từ object category đã được populate hoặc dạng string ID
         if (this.word.category && this.word.category._id) {
           this.selectedCategoryId = this.word.category._id;
         } else if (this.word.category) {
           this.selectedCategoryId = this.word.category;
         }
       } else {
-        // Create mode: chọn category đầu tiên, hoặc bật chế độ tạo mới nếu chưa có
+        // Chế độ Create: Tự chọn danh mục đầu tiên trong danh sách, hoặc bật chế độ tạo mới nếu danh sách rỗng
         if (this.categories.length > 0) {
           this.selectedCategoryId = this.categories[0]._id;
         } else {
@@ -129,11 +133,12 @@ export default {
         }
       }
     } catch (error) {
+      // Hiển thị thông báo lỗi nếu tải danh mục thất bại
       this.flash('Failed to load categories.', 'error');
     }
   },
   methods: {
-    // Bật/tắt chế độ tạo category mới ngay trong form
+    // Bật/tắt chuyển đổi giữa chế độ chọn danh mục sẵn có và tạo danh mục mới
     toggleCategoryInput() {
       this.isAddingCategory = !this.isAddingCategory;
       this.errorMessage = '';
@@ -144,9 +149,9 @@ export default {
         }
       }
     },
-    // Xử lý khi nhấn Save: validate → tạo category (nếu cần) → emit payload
+    // Xử lý nộp form: Kiểm tra dữ liệu hợp lệ → tự động tạo danh mục mới (nếu có) → phát sự kiện createOrUpdate cho component cha
     async onSubmit() {
-      // Validate 3 ngôn ngữ
+      // Kiểm tra xem đã điền đủ cả 3 ngôn ngữ chưa
       if (!this.word.german || !this.word.english || !this.word.french) {
         this.errorMessage = 'Please fill in all required fields.';
         return;
@@ -157,22 +162,25 @@ export default {
 
       let categoryId = this.selectedCategoryId;
 
-      // Nếu đang tạo category mới: gọi API tạo category trước
+      // Nếu người dùng đang ở chế độ tạo danh mục mới
       if (this.isAddingCategory) {
         const name = this.newCategoryName.trim();
 
+        // Kiểm tra tên danh mục không được để trống
         if (!name) {
           this.errorMessage = 'Category name is required.';
           this.isSubmitting = false;
           return;
         }
 
+        // Kiểm tra độ dài tối thiểu 2 ký tự
         if (name.length < 2) {
           this.errorMessage = 'Category name must be at least 2 characters.';
           this.isSubmitting = false;
           return;
         }
 
+        // Kiểm tra độ dài tối đa 40 ký tự
         if (name.length > 40) {
           this.errorMessage = 'Category name cannot exceed 40 characters.';
           this.isSubmitting = false;
@@ -180,26 +188,28 @@ export default {
         }
 
         try {
+          // Gọi API tạo danh mục mới và thêm vào danh sách local
           const newCategory = await createCategory({ name });
           this.categories.push(newCategory);
           categoryId = newCategory._id;
           this.isAddingCategory = false;
           this.newCategoryName = '';
         } catch (error) {
+          // Xử lý nếu gặp lỗi tạo danh mục
           this.errorMessage = error?.response?.data?.message || 'Failed to create category.';
           this.isSubmitting = false;
           return;
         }
       }
 
-      // Validate phải có category
+      // Kiểm tra phải chọn hoặc tạo ít nhất một danh mục hợp lệ
       if (!categoryId) {
         this.errorMessage = 'Please select or create a category.';
         this.isSubmitting = false;
         return;
       }
 
-      // Tạo payload sạch
+      // Tạo object dữ liệu sạch chuẩn bị gửi lên cho component cha
       const payload = {
         german: this.word.german.trim(),
         english: this.word.english.trim(),
@@ -211,6 +221,7 @@ export default {
         payload._id = this.word._id;
       }
 
+      // Emit event ra ngoài cho component cha xử lý lưu dữ liệu
       this.$emit('createOrUpdate', payload);
       this.isSubmitting = false;
     }

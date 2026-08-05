@@ -36,7 +36,9 @@ import { getWord, updateWord } from '../helpers/helpers';
 
 export default {
   name: 'edit',
+  // Đăng ký component con WordForm để render form chỉnh sửa từ vựng
   components: { 'word-form': WordForm },
+  // Khởi tạo đối tượng word chứa dữ liệu từ vựng cần chỉnh sửa
   data() {
     return {
       word: null // khi trang Edit vừa mở thì chưa có dữ liệu word vì API chưa trả về.

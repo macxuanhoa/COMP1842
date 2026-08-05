@@ -1,6 +1,7 @@
 const Category = require('../models/categoryModel');
 const Word = require('../models/wordModel');
 
+// Lấy danh sách tất cả danh mục, sắp xếp theo tên từ A-Z
 exports.list_all_categories = async (req, res) => {
   try {
     const categories = await Category.find({}).sort({ name: 1 });
@@ -10,6 +11,7 @@ exports.list_all_categories = async (req, res) => {
   }
 };
 
+// Tạo danh mục mới sau khi kiểm tra không bị trùng tên (không phân biệt chữ hoa/thường)
 exports.create_a_category = async (req, res) => {
   try {
     const name = req.body.name;
@@ -28,6 +30,7 @@ exports.create_a_category = async (req, res) => {
   }
 };
 
+// Cập nhật tên danh mục theo ID sau khi kiểm tra trùng tên với các danh mục khác
 exports.update_a_category = async (req, res) => {
   try {
     const category = await Category.findById(req.params.categoryId);
@@ -53,6 +56,7 @@ exports.update_a_category = async (req, res) => {
   }
 };
 
+// Xóa danh mục theo ID (kiểm tra không cho xóa nếu còn từ vựng đang liên kết đến danh mục này)
 exports.delete_a_category = async (req, res) => {
   try {
     const category = await Category.findById(req.params.categoryId);
@@ -69,3 +73,4 @@ exports.delete_a_category = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+

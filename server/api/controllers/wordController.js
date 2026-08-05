@@ -1,5 +1,6 @@
 const Word = require('../models/wordModel');
 
+// Lấy danh sách tất cả các từ vựng, bao gồm tên danh mục tương ứng và sắp xếp theo ngày tạo mới nhất
 exports.list_all_words = async (req, res) => {
   try {
     const words = await Word.find({})
@@ -11,6 +12,7 @@ exports.list_all_words = async (req, res) => {
   }
 };
 
+// Tạo một từ vựng mới với thông tin tiếng Đức, Anh, Pháp, danh mục và trạng thái yêu thích
 exports.create_a_word = async (req, res) => {
   try {
     const { german, english, french, category, favourite } = req.body;
@@ -29,6 +31,7 @@ exports.create_a_word = async (req, res) => {
   }
 };
 
+// Lấy chi tiết thông tin của một từ vựng theo ID
 exports.read_a_word = async (req, res) => {
   try {
     const word = await Word.findById(req.params.wordId).populate('category', 'name');
@@ -39,16 +42,17 @@ exports.read_a_word = async (req, res) => {
   }
 };
 
+// Cập nhật thông tin từ vựng theo ID
 exports.update_a_word = async (req, res) => {
   try {
     const word = await Word.findById(req.params.wordId);
     if (!word) return res.status(404).json({ message: 'Word not found.' });
 
-    if (req.body.german !== undefined) word.german = req.body.german;
-    if (req.body.english !== undefined) word.english = req.body.english;
-    if (req.body.french !== undefined) word.french = req.body.french;
-    if (req.body.category !== undefined) word.category = req.body.category;
-    if (req.body.favourite !== undefined) word.favourite = req.body.favourite;
+    word.german = req.body.german;
+    word.english = req.body.english;
+    word.french = req.body.french;
+    word.category = req.body.category;
+    word.favourite = req.body.favourite;
 
     const updatedWord = await word.save();
     await updatedWord.populate('category', 'name');
@@ -61,6 +65,7 @@ exports.update_a_word = async (req, res) => {
   }
 };
 
+// Xóa một từ vựng khỏi cơ sở dữ liệu theo ID
 exports.delete_a_word = async (req, res) => {
   try {
     const word = await Word.findByIdAndDelete(req.params.wordId);
@@ -70,3 +75,4 @@ exports.delete_a_word = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+

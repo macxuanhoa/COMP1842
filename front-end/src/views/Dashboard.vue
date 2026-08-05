@@ -96,6 +96,7 @@ import { getWords, getCategories } from '../helpers/helpers';
 
 export default {
   name: 'dashboard',
+  // Khởi tạo các trạng thái dữ liệu cho trang dashboard
   data() {
     return {
       totalWords: 0,      // tổng số từ trong database
