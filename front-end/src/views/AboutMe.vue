@@ -298,7 +298,7 @@ export default {
         },
         {
           title: 'Quiz History and Retake',
-          description: 'Quiz results are stored in localStorage, and a retake word list is passed through sessionStorage.'
+          description: 'Quiz results are stored in localStorage, and retake word selections are passed through URL query parameters.'
         },
         {
           title: 'Speech Playback',

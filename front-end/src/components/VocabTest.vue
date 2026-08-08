@@ -52,9 +52,14 @@
               autocomplete="off"
               ref="answerInput"
               :disabled="isWaitingNext"
-              required
+              @input="errorMessage = ''"
             />
           </div>
+        </div>
+
+        <div v-if="errorMessage" class="ui negative message quiz-feedback">
+          <i class="exclamation triangle icon"></i>
+          <span>{{ errorMessage }}</span>
         </div>
 
         <div v-if="feedback" class="ui message quiz-feedback" :class="feedbackClass">
@@ -163,6 +168,7 @@ export default {
       feedback: null,       // Trạng thái phản hồi câu làm: 'correct' (đúng), 'wrong' (sai), hoặc null (chưa trả lời)
       lastCorrectAnswer: '',// Lưu đáp án đúng của câu vừa làm để hiển thị khi người dùng làm sai
       isWaitingNext: false, // Cờ kiểm soát giao diện: true = đang hiện phản hồi & chờ bấm "Next Question"
+      errorMessage: '',     // Thông báo lỗi validate khi nộp đáp án trống
       languageDetails: {    // Metadata hỗ trợ hiển thị tên, mã quốc gia và class icon cờ cho các ngôn ngữ
         german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
         english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
@@ -216,6 +222,12 @@ export default {
 
     // Xử lý nộp câu trả lời: So sánh đáp án nhập vào với đáp án chuẩn (bỏ khoảng trắng thừa & không phân biệt hoa/thường)
     submitAnswer() {
+      if (!this.userAnswer.trim()) {
+        this.errorMessage = 'Please enter your translation before submitting.';
+        return;
+      }
+      this.errorMessage = '';
+
       const correctValue = this.currentWord[this.answerLanguage].trim().toLowerCase();
       const userValue = this.userAnswer.trim().toLowerCase();
       const isCorrect = correctValue === userValue;
@@ -250,6 +262,7 @@ export default {
     nextQuestion() {
       this.answeredCount += 1;
       this.feedback = null;
+      this.errorMessage = '';
       this.isWaitingNext = false;
       this.userAnswer = '';
       this.remainingWords.shift(); // Loại bỏ từ vừa hỏi khỏi mảng

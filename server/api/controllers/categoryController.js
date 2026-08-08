@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Category = require('../models/categoryModel');
 const Word = require('../models/wordModel');
 
@@ -11,10 +12,21 @@ exports.list_all_categories = async (req, res) => {
   }
 };
 
-// Tạo danh mục mới sau khi kiểm tra không bị trùng tên (không phân biệt chữ hoa/thường)
+// Tạo danh mục mới sau khi kiểm tra đầy đủ (bảo vệ Postman & API)
 exports.create_a_category = async (req, res) => {
   try {
-    const name = req.body.name;
+    const rawName = req.body && req.body.name;
+    const name = typeof rawName === 'string' ? rawName.trim() : '';
+
+    if (!name) {
+      return res.status(400).json({ message: 'Category name is required.' });
+    }
+    if (name.length < 2) {
+      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
+    }
+    if (name.length > 40) {
+      return res.status(400).json({ message: 'Category name cannot exceed 40 characters.' });
+    }
 
     const categories = await Category.find({});
     const duplicate = categories.find(category => category.name.toLowerCase() === name.toLowerCase());
@@ -23,25 +35,37 @@ exports.create_a_category = async (req, res) => {
     const saved = await Category.create({ name });
     res.status(201).json(saved);
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
-    }
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message || 'Failed to create category.' });
   }
 };
 
-// Cập nhật tên danh mục theo ID sau khi kiểm tra trùng tên với các danh mục khác
+// Cập nhật tên danh mục theo ID sau khi kiểm tra trùng tên và tính hợp lệ của ID
 exports.update_a_category = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.categoryId)) {
+      return res.status(400).json({ message: 'Invalid category ID format.' });
+    }
+
     const category = await Category.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found.' });
 
-    const newName = req.body.name;
+    const rawName = req.body && req.body.name;
+    const newName = typeof rawName === 'string' ? rawName.trim() : '';
+
+    if (!newName) {
+      return res.status(400).json({ message: 'Category name is required.' });
+    }
+    if (newName.length < 2) {
+      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
+    }
+    if (newName.length > 40) {
+      return res.status(400).json({ message: 'Category name cannot exceed 40 characters.' });
+    }
 
     const categories = await Category.find({});
-    const duplicate = categories.find(category =>
-      category._id.toString() !== req.params.categoryId &&
-      category.name.toLowerCase() === newName.toLowerCase()
+    const duplicate = categories.find(c =>
+      c._id.toString() !== req.params.categoryId &&
+      c.name.toLowerCase() === newName.toLowerCase()
     );
     if (duplicate) return res.status(400).json({ message: 'Category already exists.' });
 
@@ -49,16 +73,17 @@ exports.update_a_category = async (req, res) => {
     const updated = await category.save();
     res.json(updated);
   } catch (error) {
-      if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
-    }
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message || 'Failed to update category.' });
   }
 };
 
 // Xóa danh mục theo ID (kiểm tra không cho xóa nếu còn từ vựng đang liên kết đến danh mục này)
 exports.delete_a_category = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.categoryId)) {
+      return res.status(400).json({ message: 'Invalid category ID format.' });
+    }
+
     const category = await Category.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found.' });
 
@@ -70,7 +95,6 @@ exports.delete_a_category = async (req, res) => {
     await Category.findByIdAndDelete(req.params.categoryId);
     res.json({ message: 'Category deleted successfully.' });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message || 'Failed to delete category.' });
   }
 };
-

@@ -24,6 +24,10 @@
       </div>
 
       <form class="ui form" @submit.prevent="createNewCategory">
+        <div v-if="errorMessage" class="ui negative message">
+          <p>{{ errorMessage }}</p>
+        </div>
+
         <div class="field">
           <label for="new-category-name"><i class="tag icon"></i> Category Name</label>
           <div class="ui action input fluid category-create-control">
@@ -33,9 +37,7 @@
               type="text"
               placeholder="Enter new category name (e.g. Travel, Business, Food)..."
               v-model.trim="newCategoryName"
-              minlength="2"
-              maxlength="30"
-              required/>
+            />
             <button class="ui primary button" type="submit">
               Add Category
             </button>
@@ -79,7 +81,7 @@
               <tr>
                 <th><i class="tag icon"></i> Category Name</th>
                 <th class="center aligned" width="180"><i class="layer group icon"></i> Words Linked</th>
-                <th class="center aligned" width="140"><i class="cog icon"></i> Actions</th>
+                <th class="center aligned" width="160"><i class="cog icon"></i> Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -90,8 +92,6 @@
                     <input
                       type="text"
                       v-model.trim="editingCategoryName"
-                      minlength="2"
-                      maxlength="40"
                       placeholder="Enter category name..."
                     />
                   </div>
@@ -134,17 +134,27 @@
                   <div v-else class="library-row-actions">
                     <button
                       type="button"
+                      class="ui icon mini basic button"
+                      title="View words in this category"
+                      @click="viewCategoryWords(category._id)"
+                    >
+                      <i class="eye icon"></i>
+                    </button>
+
+                    <button
+                      type="button"
                       class="ui icon mini basic primary button"
                       title="Edit category"
                       @click="startCategoryEdit(category)"
                     >
                       <i class="edit icon"></i>
                     </button>
+
                     <button
                       type="button"
                       class="ui icon mini basic negative button"
                       title="Delete category"
-                      @click="deleteCategoryItem(category)"
+                      @click="triggerDeleteCategory(category)"
                     >
                       <i class="trash icon"></i>
                     </button>
@@ -194,6 +204,17 @@
         </div>
       </div>
     </section>
+
+    <!-- Custom Delete Confirmation Dialog -->
+    <confirm-modal
+      :is-open="isConfirmOpen"
+      title="Delete Category"
+      :message="deleteMessage"
+      confirm-text="Delete Category"
+      cancel-text="Cancel"
+      @confirm="onConfirmDeleteCategory"
+      @cancel="onCancelDeleteCategory"
+    />
   </div>
 </template>
 
@@ -207,10 +228,11 @@ import {
   updateCategory,
   deleteCategory
 } from '../helpers/helpers';
+import ConfirmModal from '../components/ConfirmModal.vue';
 
 export default {
   name: 'categories',
-  // Khởi tạo các biến trạng thái dữ liệu của trang quản lý danh mục
+  components: { ConfirmModal },
   data() {
     return {
       categories: [],          // danh sách tất cả category
@@ -218,70 +240,67 @@ export default {
       newCategoryName: '',     // tên category mới trong ô input
       editingCategoryId: '',   // ID category đang được chỉnh sửa inline
       editingCategoryName: '', // tên mới khi đang sửa inline
+      errorMessage: '',        // Thông báo lỗi validate thủ công
       currentPage: 1,          // trang hiện tại
-      pageSize: 8              // số category mỗi trang
+      pageSize: 8,             // số category mỗi trang
+      isConfirmOpen: false,    // Cờ bật/tắt modal xóa
+      categoryToDelete: null   // Category chuẩn bị xóa
     };
   },
   computed: {
-    // Tổng số trang dựa trên số category và pageSize
     totalPages() {
       return Math.ceil(this.categories.length / this.pageSize) || 1;
     },
-    // Danh sách category hiển thị trên trang hiện tại
     visibleCategories() {
       const start = (this.currentPage - 1) * this.pageSize;
       return this.categories.slice(start, start + this.pageSize);
     },
-    // Chuỗi tóm tắt phân trang (vd: "Showing 1–8 of 15 categories")
     paginationSummary() {
       const total = this.categories.length;
       if (total === 0) return '0 categories';
       const start = (this.currentPage - 1) * this.pageSize + 1;
       const end = Math.min(start + this.pageSize - 1, total);
       return `Showing ${start}–${end} of ${total} categories`;
+    },
+    deleteMessage() {
+      if (!this.categoryToDelete) return '';
+      return `Are you sure you want to delete "${this.categoryToDelete.name}"? This action cannot be undone.`;
     }
   },
   watch: {
-    // Nếu xóa category làm giảm tổng số trang → lùi về trang cuối
     categories() {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;
       }
     }
   },
-  // Lifecycle hook mounted: Gọi hàm tải dữ liệu trang khi component được gắn vào DOM
   mounted() {
     this.loadPageData();
   },
   methods: {
-    // Focus vào ô input tạo category mới
     focusNewCategoryInput() {
-      this.$refs.newCategoryInput.focus();
+      if (this.$refs.newCategoryInput) {
+        this.$refs.newCategoryInput.focus();
+      }
     },
-    // ── Phân trang ───────────────────────────────────────────────────
-    // Chuyển sang trang kế tiếp
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
-    // Trở về trang trước đó
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
     },
-    // Nhảy đến trang được chọn
     goToPage(page) {
       this.currentPage = page;
     },
-    // Đếm số từ đang dùng 1 category (theo ObjectId)
     getWordsUsingCategory(categoryId) {
       return this.words.filter(
-        word => word.category._id === categoryId
+        word => word.category && word.category._id === categoryId
       ).length; 
     },
-    // Load categories + words từ API
     async loadPageData() {
       try {
         const [categoriesData, wordsData] = await Promise.all([getCategories(), getWords()]);
@@ -291,18 +310,38 @@ export default {
         this.flash('Failed to load page data.', 'error');
       }
     },
+
+    // View words filtered by this category (Task 7)
+    viewCategoryWords(categoryId) {
+      this.$router.push({ name: 'words', query: { category: categoryId } });
+    },
+
     // ── CRUD Category ────────────────────────────────────────────────
-    // Tạo category mới
     async createNewCategory() {
       const name = this.newCategoryName.trim();
-      if (!name) return this.flash('Category name is required.', 'error');
+      
+      // Manual Validation (Task 6)
+      if (!name) {
+        this.errorMessage = 'Category name is required.';
+        return;
+      }
+      if (name.length < 2) {
+        this.errorMessage = 'Category name must be at least 2 characters.';
+        return;
+      }
+      if (name.length > 40) {
+        this.errorMessage = 'Category name cannot exceed 40 characters.';
+        return;
+      }
+
+      this.errorMessage = '';
+
       try {
         await createCategory({ name });
         this.flash('Category created!', 'success');
         this.newCategoryName = '';
         await this.loadPageData();
 
-        // Tìm vị trí category vừa tạo để nhảy đến đúng trang chứa nó
         const categoryIndex = this.categories.findIndex(
           category => category.name.toLowerCase() === name.toLowerCase()
         );
@@ -310,23 +349,25 @@ export default {
           this.currentPage = Math.floor(categoryIndex / this.pageSize) + 1;
         }
       } catch (error) {
-        this.flash(error?.response?.data?.message || 'Failed to create category.', 'error');
+        this.errorMessage = error?.response?.data?.message || 'Failed to create category.';
       }
     },
-    // Bắt đầu chỉnh sửa inline 1 dòng
+
     startCategoryEdit(category) {
-      this.editingCategoryId = category._id; //lưu category đó lại và chuyển hết lên v-if="editingCategoryId === category._id"
-      this.editingCategoryName = category.name; //Lấy tên hiện tại của Category đưa vào ô input: <input v-model="editingCategoryName">
+      this.editingCategoryId = category._id;
+      this.editingCategoryName = category.name;
     },
-    // Hủy chỉnh sửa inline
+
     cancelCategoryEdit() {
       this.editingCategoryId = '';
       this.editingCategoryName = '';
     },
-    // Lưu tên category sau khi sửa inline
+
     async saveCategoryEdit(categoryId) {
       const name = this.editingCategoryName.trim();
       if (!name) return this.flash('Category name is required.', 'error');
+      if (name.length < 2) return this.flash('Category name must be at least 2 characters.', 'error');
+
       try {
         await updateCategory({ _id: categoryId, name });
         this.flash('Category renamed!', 'success');
@@ -336,26 +377,34 @@ export default {
         this.flash(error?.response?.data?.message || 'Failed to rename.', 'error');
       }
     },
-    // ── Xóa category (chỉ khi không có từ nào dùng nó) ──────────────
-    // Xóa category theo ID sau khi kiểm tra không có từ vựng liên kết và được người dùng xác nhận
-    async deleteCategoryItem(category) {
-      // 1. Kiểm tra còn từ nào dùng category này không
+
+    // ── Xóa category với ConfirmModal ─────────────────────────────
+    triggerDeleteCategory(category) {
       const wordsCount = this.getWordsUsingCategory(category._id);
       if (wordsCount > 0) {
-        return this.flash('Cannot delete a category with words.', 'error');
+        return this.flash('Cannot delete a category with linked words.', 'error');
       }
+      this.categoryToDelete = category;
+      this.isConfirmOpen = true;
+    },
 
-      // 2. Hỏi xác nhận
-      const confirmed = window.confirm(`Delete "${category.name}"?`);
-      if (!confirmed) return;
+    onCancelDeleteCategory() {
+      this.isConfirmOpen = false;
+      this.categoryToDelete = null;
+    },
 
-      // 3. Gửi lên server để xóa → load lại dữ liệu
+    async onConfirmDeleteCategory() {
+      if (!this.categoryToDelete) return;
+
       try {
-        await deleteCategory(category._id);
+        await deleteCategory(this.categoryToDelete._id);
         this.flash('Category deleted.', 'success');
         await this.loadPageData();
       } catch {
         this.flash('Failed to delete category.', 'error');
+      } finally {
+        this.isConfirmOpen = false;
+        this.categoryToDelete = null;
       }
     }
   }

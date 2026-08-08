@@ -14,14 +14,14 @@
       </div>
     </header>
 
-    <section class="ui segment workspace-panel">
+    <section v-if="word" class="ui segment workspace-panel">
       <div class="word-detail-overview">
         <div>
           <span class="workspace-section-label">Assigned category</span>
           <div>
             <span class="ui basic label word-detail-category">
               <i class="tag icon"></i>
-              {{ word.category.name }}
+              {{ word.category ? word.category.name : 'Unassigned' }}
             </span>
           </div>
         </div>
@@ -47,11 +47,15 @@
             <input type="text" readonly :value="word.german" />
             <button
               type="button"
-              class="ui basic button listen-action-btn"
+              class="modern-speaker-btn"
+              :class="{ playing: activeAudioLang === 'de-DE' }"
               @click="speakWord(word.german, 'de-DE')"
               title="Listen German pronunciation"
             >
-              <i class="volume up icon"></i> Listen
+              <div class="speaker-icon-wrapper">
+                <i class="volume up icon"></i>
+              </div>
+              <span>Listen</span>
             </button>
           </div>
         </div>
@@ -65,11 +69,15 @@
             <input type="text" readonly :value="word.english" />
             <button
               type="button"
-              class="ui basic button listen-action-btn"
+              class="modern-speaker-btn"
+              :class="{ playing: activeAudioLang === 'en-US' }"
               @click="speakWord(word.english, 'en-US')"
               title="Listen English pronunciation"
             >
-              <i class="volume up icon"></i> Listen
+              <div class="speaker-icon-wrapper">
+                <i class="volume up icon"></i>
+              </div>
+              <span>Listen</span>
             </button>
           </div>
         </div>
@@ -83,11 +91,15 @@
             <input type="text" readonly :value="word.french" />
             <button
               type="button"
-              class="ui basic button listen-action-btn"
+              class="modern-speaker-btn"
+              :class="{ playing: activeAudioLang === 'fr-FR' }"
               @click="speakWord(word.french, 'fr-FR')"
               title="Listen French pronunciation"
             >
-              <i class="volume up icon"></i> Listen
+              <div class="speaker-icon-wrapper">
+                <i class="volume up icon"></i>
+              </div>
+              <span>Listen</span>
             </button>
           </div>
         </div>
@@ -98,12 +110,23 @@
           <router-link :to="{ name: 'edit', params: { id: word._id } }" class="ui primary button icon labeled">
             <i class="edit icon"></i> Edit Word
           </router-link>
-          <button type="button" class="ui basic negative button icon labeled" @click="deleteWordItem">
+          <button type="button" class="ui basic negative button icon labeled" @click="triggerDeleteWord">
             <i class="trash icon"></i> Delete
           </button>
         </div>
       </div>
     </section>
+
+    <!-- Custom Delete Confirmation Dialog -->
+    <confirm-modal
+      :is-open="isConfirmOpen"
+      title="Delete Word"
+      :message="deleteMessage"
+      confirm-text="Delete Word"
+      cancel-text="Cancel"
+      @confirm="onConfirmDelete"
+      @cancel="onCancelDelete"
+    />
   </div>
 </template>
 
@@ -111,16 +134,24 @@
 // ── Trang chi tiết từ vựng ───────────────────────────────────────────
 // Xem đầy đủ thông tin 1 word: 3 ngôn ngữ, category, favourite, phát âm
 import { getWord, updateWord, deleteWord } from '../helpers/helpers';
+import ConfirmModal from '../components/ConfirmModal.vue';
 
 export default {
   name: 'show',
-  // Khởi tạo đối tượng word chứa dữ liệu chi tiết của từ vựng
+  components: { ConfirmModal },
   data() {
     return {
-      word: null // dữ liệu word load từ API
+      word: null,             // dữ liệu word load từ API
+      activeAudioLang: null,  // Ngôn ngữ đang phát âm thanh
+      isConfirmOpen: false    // Cờ hiển thị dialog xóa
     };
   },
-  // Hook mounted: Gọi API để tải thông tin chi tiết từ vựng theo ID trên URL
+  computed: {
+    deleteMessage() {
+      if (!this.word) return '';
+      return `Are you sure you want to delete "${this.word.english}" (${this.word.german})? This action cannot be undone.`;
+    }
+  },
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
@@ -132,12 +163,21 @@ export default {
     // Phát âm thanh bằng Web Speech API của trình duyệt
     speakWord(text, languageCode) {
       if (!text || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      this.activeAudioLang = languageCode;
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = languageCode;
+      utterance.onend = () => {
+        this.activeAudioLang = null;
+      };
+      utterance.onerror = () => {
+        this.activeAudioLang = null;
+      };
+
       window.speechSynthesis.speak(utterance);
     },
     // ── Bật/tắt yêu thích ──────────────────────────────────────────
-    // Bật hoặc tắt trạng thái yêu thích của từ vựng và cập nhật lên server
     async toggleFavourite() {
       try {
         const updatedWord = await updateWord({
@@ -145,7 +185,6 @@ export default {
           favourite: !this.word.favourite
         });
 
-        // Chỉ cập nhật đúng trường favourite
         this.word.favourite = updatedWord.favourite;
 
         this.flash(
@@ -160,18 +199,22 @@ export default {
       }
     },
 
-    // ── Xóa từ sau khi xác nhận ────────────────────────────────────
-    // Xóa từ vựng khỏi cơ sở dữ liệu và chuyển về trang danh sách
-    async deleteWordItem() {
-      const confirmed = window.confirm('Are you sure you want to delete this word?');
-      if (!confirmed) return;
-
+    // ── Xóa từ với Dialog tinh tế ─────────────────────────────────
+    triggerDeleteWord() {
+      this.isConfirmOpen = true;
+    },
+    onCancelDelete() {
+      this.isConfirmOpen = false;
+    },
+    async onConfirmDelete() {
       try {
         await deleteWord(this.word._id);
         this.flash('Word deleted successfully!', 'success');
         this.$router.push('/words');
       } catch {
         this.flash('Failed to delete the word.', 'error');
+      } finally {
+        this.isConfirmOpen = false;
       }
     }
   }
@@ -218,6 +261,7 @@ export default {
   font-weight: 700;
   line-height: 1.2;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .word-detail-favourite .icon {
   display: inline-flex !important;
@@ -252,26 +296,73 @@ export default {
 .word-detail-languages input[readonly] {
   color: #0f172a !important;
   background: #ffffff !important;
+  font-weight: 600;
 }
-.listen-action-btn {
-  flex: 0 0 auto !important;
-  background: #f8fafc !important;
-  color: #0284c7 !important;
-  border-color: #cbd5e1 !important;
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  font-weight: 600 !important;
-  padding: 0.6rem 0.95rem !important;
-  transition: all 0.15s ease !important;
+
+/* Modern Speaker Button */
+.modern-speaker-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border: none;
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
 }
-.listen-action-btn:hover {
-  background: #0284c7 !important;
+
+.modern-speaker-btn:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+  transform: translateY(-1px);
+}
+
+.modern-speaker-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.2);
+}
+
+.speaker-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+}
+
+.speaker-icon-wrapper .icon {
+  margin: 0 !important;
+  font-size: 0.8rem !important;
   color: #ffffff !important;
-  border-color: #0284c7 !important;
 }
-.listen-action-btn .icon {
-  margin: 0 0.3rem 0 0 !important;
+
+.modern-speaker-btn.playing {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  animation: pulseAudio 1.2s infinite ease-in-out;
 }
+
+@keyframes pulseAudio {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
 .word-detail-actions {
   display: flex;
   align-items: center;

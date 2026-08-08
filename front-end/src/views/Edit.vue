@@ -14,7 +14,7 @@
       </div>
     </header>
 
-    <section class="ui segment workspace-panel">
+    <section v-if="word" class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
           <div>
@@ -36,24 +36,20 @@ import { getWord, updateWord } from '../helpers/helpers';
 
 export default {
   name: 'edit',
-  // Đăng ký component con WordForm để render form chỉnh sửa từ vựng
   components: { 'word-form': WordForm },
-  // Khởi tạo đối tượng word chứa dữ liệu từ vựng cần chỉnh sửa
   data() {
     return {
-      word: null // khi trang Edit vừa mở thì chưa có dữ liệu word vì API chưa trả về.
+      word: null
     };
   },
-  // sau đó mounted() chạy: gọi API lấy word theo ID trên URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
-    } catch (error) {
+    } catch {
       this.flash('Failed to load word details.', 'error');
     }
   },
   methods: {
-    // Nhận dữ liệu từ WordForm, gọi API cập nhật word
     async createOrUpdate(updatedWord) {
       try {
         await updateWord(updatedWord);

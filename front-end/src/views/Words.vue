@@ -8,6 +8,15 @@
       </div>
 
       <div class="workspace-header-actions">
+        <button
+          type="button"
+          class="ui basic primary button"
+          @click="isImportExportOpen = true"
+          title="Import or Export vocabulary"
+        >
+          <i class="exchange icon"></i>
+          Import / Export
+        </button>
         <router-link to="/words/new" class="ui primary button">
           <i class="plus icon"></i>
           Add new word
@@ -22,22 +31,43 @@
           <p>Narrow the library without changing your saved words.</p>
         </div>
 
-        <span class="workspace-panel-icon">
-          <i class="filter icon"></i>
-        </span>
+        <div class="library-panel-actions">
+          <button
+            v-if="hasActiveFilters"
+            type="button"
+            class="ui basic compact button reset-filter-btn"
+            @click="resetFilters"
+            title="Reset all filters"
+          >
+            <i class="undo icon"></i> Reset filters
+          </button>
+          <span class="workspace-panel-icon">
+            <i class="filter icon"></i>
+          </span>
+        </div>
       </div>
 
       <div class="ui form">
         <div class="field">
-          <label><i class="search icon"></i> Search</label>
+          <label for="search-input" class="clickable-label" @click="focusField('searchInput')">
+            <i class="search icon"></i> Search
+          </label>
 
-          <div class="ui icon input fluid">
+          <div class="ui icon input fluid search-input-wrapper">
             <input
+              id="search-input"
+              ref="searchInput"
               type="text"
               placeholder="Search words in English, German, or French..."
               v-model="searchText"
             />
-            <i class="search icon"></i>
+            <i
+              v-if="searchText"
+              class="times circle icon clear-search-icon"
+              title="Clear search"
+              @click="clearSearch"
+            ></i>
+            <i v-else class="search icon"></i>
           </div>
         </div>
 
@@ -156,9 +186,7 @@
                 <!-- English -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text">
-                      {{ word.english }}
-                    </span>
+                    <span class="language-text" v-html="highlightMatch(word.english, searchText)"></span>
 
                     <button
                       type="button"
@@ -174,9 +202,7 @@
                 <!-- German -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text">
-                      {{ word.german }}
-                    </span>
+                    <span class="language-text" v-html="highlightMatch(word.german, searchText)"></span>
 
                     <button
                       type="button"
@@ -192,9 +218,7 @@
                 <!-- French -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text">
-                      {{ word.french }}
-                    </span>
+                    <span class="language-text" v-html="highlightMatch(word.french, searchText)"></span>
 
                     <button
                       type="button"
@@ -236,7 +260,7 @@
                       type="button"
                       class="ui icon mini basic negative button"
                       title="Delete word"
-                      @click="deleteWordItem(word)"
+                      @click="triggerDeleteWord(word)"
                     >
                       <i class="trash icon"></i>
                     </button>
@@ -285,21 +309,45 @@
         </div>
       </div>
     </section>
+
+    <!-- Custom Delete Confirmation Dialog -->
+    <confirm-modal
+      :is-open="isConfirmOpen"
+      title="Delete Vocabulary Word"
+      :message="deleteMessage"
+      confirm-text="Delete Word"
+      cancel-text="Cancel"
+      @confirm="onConfirmDelete"
+      @cancel="onCancelDelete"
+    />
+
+    <!-- Import & Export Modal -->
+    <import-export-modal
+      :is-open="isImportExportOpen"
+      :categories="categories"
+      :words="words"
+      :filtered-words="filteredWords"
+      @close="isImportExportOpen = false"
+      @imported="loadPageData"
+    />
   </div>
 </template>
 
 <script>
 // ── Trang thư viện từ vựng ───────────────────────────────────────────
-// Hiển thị toàn bộ words dạng bảng, có tìm kiếm, lọc, sắp xếp, phân trang
+// Hiển thị toàn bộ words dạng bảng, có tìm kiếm, lọc, sắp xếp, phân trang, tô sáng từ khóa & xuất/nhập từ vựng
 import {
   getWords,
   updateWord,
   deleteWord,
   getCategories
 } from '../helpers/helpers';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import ImportExportModal from '../components/ImportExportModal.vue';
 
 export default {
   name: 'words',
+  components: { ConfirmModal, ImportExportModal },
   // Khởi tạo các trạng thái dữ liệu cho trang thư viện từ vựng
   data() {
     return {
@@ -310,7 +358,10 @@ export default {
       selectedFavouriteFilter: 'all', // 'all' | 'fav' | 'normal'
       selectedSortOrder: 'newest', // 'newest' | 'oldest'
       currentPage: 1,              // trang hiện tại
-      pageSize: 8                  // số từ mỗi trang
+      pageSize: 8,                 // số từ mỗi trang
+      isConfirmOpen: false,        // Cờ hiển thị dialog xóa
+      wordToDelete: null,          // Từ vựng chuẩn bị xóa
+      isImportExportOpen: false    // Cờ hiển thị modal Import/Export
     };
   },
   watch: {
@@ -324,10 +375,31 @@ export default {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;
       }
+    },
+    // Theo dõi route query để áp dụng lọc category nếu chuyển từ Category Manager
+    '$route.query.category': {
+      handler(newCategory) {
+        if (newCategory !== undefined) {
+          this.selectedCategoryId = newCategory || '';
+        }
+      },
+      immediate: true
     }
   },
   computed: {
-    // Computed property lọc và sắp xếp từ vựng: filteredWords = bản sao dữ liệu + (lọc + sắp xếp) --> sau đó return dữ liệu cuối cùng
+    hasActiveFilters() {
+      return Boolean(
+        this.searchText ||
+        this.selectedCategoryId ||
+        this.selectedFavouriteFilter !== 'all' ||
+        this.selectedSortOrder !== 'newest'
+      );
+    },
+    deleteMessage() {
+      if (!this.wordToDelete) return '';
+      return `Are you sure you want to delete "${this.wordToDelete.english}" (${this.wordToDelete.german})? This action cannot be undone.`;
+    },
+    // Computed property lọc và sắp xếp từ vựng
     filteredWords() {
       const searchValue = this.searchText.trim().toLowerCase();
       let result = [...this.words];
@@ -341,7 +413,7 @@ export default {
       }
 
       if (this.selectedCategoryId) { //lọc theo category
-        result = result.filter(word => word.category._id === this.selectedCategoryId);
+        result = result.filter(word => word.category && word.category._id === this.selectedCategoryId);
       }
 
       if (this.selectedFavouriteFilter === 'fav') { //lọc theo favourite
@@ -361,60 +433,116 @@ export default {
       return result;
     },
     // ── Phân trang ───────────────────────────────────────────────────
-    // Computed property tính tổng số trang dựa trên danh sách từ vựng đã lọc và kích thước trang (8 từ/trang)
-    totalPages() { //tính xem cần bao nhiêu trang (quy định 8 từ/trang)
+    totalPages() {
       return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
     },
-    // Lấy danh sách từ vựng hiển thị ở trang hiện tại (theo phân trang)
-    visibleWords() {  //khi đang ở trang nào thì lấy đúng nhóm từ của trang đó (0-8, 8-16, 16-24,...)
-      const start = (this.currentPage - 1) * this.pageSize; //start từ kết quả ví dụ 8, 16, 24,25,26... (tùy trang)
+    visibleWords() {
+      const start = (this.currentPage - 1) * this.pageSize;
       return this.filteredWords.slice(start, start + this.pageSize); 
     },
-    // Tạo chuỗi tóm tắt vị trí hiển thị và tổng số từ vựng
     paginationSummary() {
       const total = this.filteredWords.length;
       if (total === 0) return '0 words';
 
-      // Vị trí từ đầu tiên ví dụ 1, 9, 17,...
       const start = (this.currentPage - 1) * this.pageSize + 1;
-      // Vị trí từ cuối cùng của trang đang đứng
       const end = Math.min(start + this.pageSize - 1, total);
 
       return `Showing ${start}–${end} of ${total} words`;
     }
   },
-  // Lifecycle hook mounted: khi mount: gọi hàm loadPageData để tải dữ liệu từ server
+  // Lifecycle hook mounted
   mounted() {
     this.loadPageData();
   },
   methods: {
-    // Reset về trang 1 (gọi khi filter thay đổi)
+    // Tô sáng chữ khớp với từ khóa tìm kiếm (Mục số 1)
+    highlightMatch(text, query) {
+      if (!text) return '';
+      const search = query ? query.trim() : '';
+      if (!search) return text;
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escaped})`, 'gi');
+      return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+    },
+
+    // Xuất file CSV danh sách từ vựng (Mục số 4)
+    exportToCSV() {
+      const wordsToExport = this.filteredWords;
+      if (!wordsToExport || wordsToExport.length === 0) {
+        return this.flash('No words available to export.', 'warning');
+      }
+
+      const headers = ['English', 'German', 'French', 'Category', 'Favourite', 'Created Date'];
+      const rows = wordsToExport.map(w => [
+        `"${(w.english || '').replace(/"/g, '""')}"`,
+        `"${(w.german || '').replace(/"/g, '""')}"`,
+        `"${(w.french || '').replace(/"/g, '""')}"`,
+        `"${(w.category?.name || '').replace(/"/g, '""')}"`,
+        w.favourite ? 'Yes' : 'No',
+        `"${w.created_date ? new Date(w.created_date).toLocaleString() : ''}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `vocabulary_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      this.flash(`Exported ${wordsToExport.length} words to CSV!`, 'success');
+    },
+
+    // Clear ô tìm kiếm
+    clearSearch() {
+      this.searchText = '';
+      this.focusField('searchInput');
+    },
+    // Reset tất cả bộ lọc
+    resetFilters() {
+      this.searchText = '';
+      this.selectedCategoryId = '';
+      this.selectedFavouriteFilter = 'all';
+      this.selectedSortOrder = 'newest';
+      this.currentPage = 1;
+      if (this.$route.query.category) {
+        this.$router.replace({ query: {} });
+      }
+    },
+    // Focus vào input/select theo ref
+    focusField(refName) {
+      this.$nextTick(() => {
+        if (this.$refs[refName]) {
+          this.$refs[refName].focus();
+        }
+      });
+    },
     resetPage() {
       this.currentPage = 1;
     },
-    // Chuyển sang trang tiếp theo
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
-    // Quay lại trang trước đó
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
     },
-    // Chuyển đến trang được chỉ định
     goToPage(page) {
-      this.currentPage = page; // tính lại currentPage ở visib
+      this.currentPage = page;
     },
 
-    // Phát âm thanh bằng Web Speech API của trình duyệt
+    // Phát âm thanh bằng Web Speech API
     speakWord(text, languageCode) {
-      if (!text || !window.speechSynthesis) return; //Nếu không có từ hoặc trình duyệt không hỗ trợ đọc giọng nói thì dừng hàm.
-      window.speechSynthesis.cancel(); //Dừng âm thanh đang đọc trước đó, tránh nhiều giọng đọc chồng lên nhau.
-      const utterance = new SpeechSynthesisUtterance(text); //Tạo một đối tượng chứa nội dung cần đọc.
-      utterance.lang = languageCode; //Gán ngôn ngữ phát âm cho nội dung utterance
+      if (!text || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = languageCode;
       window.speechSynthesis.speak(utterance);
     },
 
@@ -424,25 +552,24 @@ export default {
         const [wordsData, categoriesData] = await Promise.all([getWords(), getCategories()]);
         this.words = wordsData;
         this.categories = categoriesData;
+        if (this.$route.query.category) {
+          this.selectedCategoryId = this.$route.query.category;
+        }
       } catch {
         this.flash('Failed to load vocabulary data.', 'error');
       }
     },
 
     // ── Bật/tắt yêu thích ──────────────────────────────────────────
-    // Bật hoặc tắt trạng thái yêu thích của từ vựng và cập nhật lên server
     async toggleFavourite(word) {
       try {
-        // Gửi trạng thái ngược lại lên server
         const updatedWord = await updateWord({
           _id: word._id,
           favourite: !word.favourite
         });
 
-        // Chỉ cập nhật đúng trường favourite — không đụng đến các trường khác
         word.favourite = updatedWord.favourite;
 
-        // Hiển thị thông báo
         this.flash(
           word.favourite
             ? 'Added to Favourites!'
@@ -455,24 +582,26 @@ export default {
       }
     },
 
-    // ── Xóa từ sau khi xác nhận ────────────────────────────────────
-    // Xóa từ vựng khỏi cơ sở dữ liệu sau khi người dùng xác nhận
-    async deleteWordItem(wordToDelete) {
-      // 1. Hỏi xác nhận
-      const confirmed = window.confirm('Are you sure you want to delete this word?');
-      if (!confirmed) return;
-
+    // ── Xóa từ với Dialog tinh tế ─────────────────────────────────
+    triggerDeleteWord(word) {
+      this.wordToDelete = word;
+      this.isConfirmOpen = true;
+    },
+    onCancelDelete() {
+      this.isConfirmOpen = false;
+      this.wordToDelete = null;
+    },
+    async onConfirmDelete() {
+      if (!this.wordToDelete) return;
       try {
-        // 2. Gửi lên server để xóa
-        await deleteWord(wordToDelete._id);
-
-        // 3. Loại bỏ từ khỏi mảng (giữ lại những từ khác id)
-        this.words = this.words.filter(eachWord => eachWord._id !== wordToDelete._id);
-
-        // 4. Hiển thị thông báo
+        await deleteWord(this.wordToDelete._id);
+        this.words = this.words.filter(w => w._id !== this.wordToDelete._id);
         this.flash('Word deleted successfully!', 'success');
       } catch {
         this.flash('Failed to delete the word.', 'error');
+      } finally {
+        this.isConfirmOpen = false;
+        this.wordToDelete = null;
       }
     }
   }
@@ -523,6 +652,56 @@ export default {
   color: #64748b;
   font-size: 0.82rem;
   line-height: 1.4;
+}
+
+.library-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reset-filter-btn {
+  font-size: 0.8rem !important;
+  padding: 0.4rem 0.75rem !important;
+  border-radius: 6px !important;
+  color: #64748b !important;
+  border-color: #cbd5e1 !important;
+  margin: 0 !important;
+}
+.reset-filter-btn:hover {
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+}
+
+.clickable-label {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.clickable-label:hover {
+  color: #0284c7 !important;
+}
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.clear-search-icon {
+  position: absolute !important;
+  right: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  left: auto !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  color: #94a3b8 !important;
+  font-size: 1.15rem !important;
+  transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+.clear-search-icon:hover {
+  color: #ef4444 !important;
+  transform: translateY(-50%) scale(1.1) !important;
 }
 
 .library-filter-grid {
@@ -595,6 +774,15 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Search Keyword Highlight */
+::v-deep .search-highlight {
+  background-color: #fef08a !important;
+  color: #854d0e !important;
+  padding: 0.05em 0.25em !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
 }
 
 .language-audio-button {

@@ -73,6 +73,10 @@ body {
 }
 
 .navbar .ui.pointing.menu .item {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
   font-weight: 600 !important;
   font-size: 0.98rem !important;
   letter-spacing: 0.01em !important;
@@ -81,6 +85,13 @@ body {
   color: #94a3b8 !important;
   border-bottom: 2px solid transparent !important;
   transition: all 0.15s ease !important;
+}
+
+.navbar .ui.pointing.menu .item i.icon {
+  margin-right: 0.45rem !important;
+  margin-left: 0 !important;
+  font-size: 1rem !important;
+  vertical-align: middle !important;
 }
 
 .navbar .ui.pointing.menu .item:hover {
@@ -340,15 +351,39 @@ body {
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12) !important;
 }
 
-/* Precise Icon & Flag Alignment */
-.ui.form .field > label .icon,
-.ui.form .field > label .flag,
-.ui.table th .icon,
-.ui.table th .flag {
+/* Precise Optical Icon & Flag Alignment System */
+.workspace-eyebrow,
+.workspace-panel-title,
+.modal-title,
+.setup-section-title {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.workspace-eyebrow i.icon,
+.workspace-panel-title i.icon,
+.modal-title i.icon,
+.setup-section-title i.icon {
+  margin-right: 0.4rem !important;
+  margin-left: 0 !important;
+  vertical-align: initial !important;
+}
+
+.ui.form .field > label i.icon,
+.ui.form .field > label i.flag,
+.ui.table th i.icon,
+.ui.table th i.flag,
+.ui.button i.icon,
+.ui.label i.icon,
+.ui.label i.flag {
   display: inline-block !important;
-  vertical-align: -0.1em !important;
+  vertical-align: -0.08em !important;
   margin-right: 0.35rem !important;
   margin-left: 0 !important;
+}
+
+.ui.button.icon:not(.labeled) i.icon {
+  margin-right: 0 !important;
 }
 
 .ui.action.input {
