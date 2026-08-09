@@ -102,13 +102,4 @@ export default {
   border-radius: 8px !important;
   font-weight: 600 !important;
 }
-
-@media (max-width: 480px) {
-  .nf-card {
-    padding: 2.25rem 1.5rem;
-  }
-  .nf-actions {
-    flex-direction: column;
-  }
-}
 </style>

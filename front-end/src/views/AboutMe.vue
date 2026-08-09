@@ -682,8 +682,8 @@ export default {
 .stack-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.3rem 0.75rem 0.3rem 0.4rem;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.45rem;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 999px;
@@ -812,24 +812,5 @@ export default {
   margin: 0 !important;
   font-size: 1rem;
   line-height: 1;
-}
-
-@media (max-width: 900px) {
-  .about-hero-grid,
-  .stack-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 767px) {
-  .about-github-panel {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .about-grid,
-  .about-list-grid,
-  .about-footer-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

@@ -294,11 +294,6 @@ export default {
 }
 .muted { color: #94a3b8; }
 
-@media (max-width: 767px) {
-  .stat-row {
-    grid-template-columns: 1fr;
-  }
-}
 .score-good { 
   color: #16a34a; 
   font-weight: 600; 

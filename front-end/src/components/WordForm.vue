@@ -463,19 +463,4 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-@media (max-width: 640px) {
-  .word-form-languages {
-    grid-template-columns: 1fr;
-  }
-  .word-form-category-row {
-    grid-template-columns: 1fr;
-  }
-  .word-form-actions {
-    justify-content: stretch;
-  }
-  .word-form-actions .ui.button {
-    width: 100%;
-  }
-}
 </style>

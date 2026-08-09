@@ -675,26 +675,4 @@ export default {
   opacity: 0.45;
   cursor: not-allowed;
 }
-
-@media (max-width: 640px) {
-  .setup-section {
-    padding: 1.25rem;
-  }
-  .language-pair-container {
-    grid-template-columns: 1fr;
-  }
-  .swap-lang-btn {
-    margin: 0 auto;
-  }
-  .word-set-cards {
-    grid-template-columns: 1fr;
-  }
-  .setup-footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .setup-warning {
-    margin: 0 1.25rem 1.25rem !important;
-  }
-}
 </style>
