@@ -4,6 +4,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+// Định nghĩa Schema cho dữ liệu Từ vựng (Words)
 const WordSchema = new Schema({
   german: {
     type: String,
@@ -38,4 +39,6 @@ const WordSchema = new Schema({
   }
 });
 
+// Khởi tạo và xuất Mongoose Model 'Words'
 module.exports = mongoose.model('Words', WordSchema);
+

@@ -14,7 +14,7 @@
       </div>
     </header>
 
-    <section class="ui segment workspace-panel">
+    <section v-if="word" class="ui segment workspace-panel">
       <div class="workspace-panel-heading">
         <div class="workspace-panel-title">
           <div>
@@ -24,6 +24,19 @@
         </div>
       </div>
       <word-form :word="word" @createOrUpdate="createOrUpdate"></word-form>
+    </section>
+
+    <!-- Hiển thị khi ID không hợp lệ hoặc từ vựng không tồn tại -->
+    <section v-else-if="loadFailed" class="ui segment workspace-panel word-load-error">
+      <div class="word-load-error-icon">
+        <i class="search minus icon"></i>
+      </div>
+      <h2>Word not found</h2>
+      <p>This vocabulary entry does not exist or the link is invalid.</p>
+      <router-link to="/words" class="ui primary button icon labeled">
+        <i class="arrow left icon"></i>
+        Back to Library
+      </router-link>
     </section>
   </div>
 </template>
@@ -39,19 +52,19 @@ export default {
   components: { 'word-form': WordForm },
   data() {
     return {
-      word: null // khi trang Edit vừa mở thì chưa có dữ liệu word vì API chưa trả về.
+      word: null,
+      loadFailed: false // Cờ đánh dấu load word thất bại (ID sai/không tồn tại)
     };
   },
-  // sau đó mounted() chạy: gọi API lấy word theo ID trên URL
   async mounted() {
     try {
       this.word = await getWord(this.$route.params.id);
-    } catch (error) {
+    } catch {
+      this.loadFailed = true;
       this.flash('Failed to load word details.', 'error');
     }
   },
   methods: {
-    // Nhận dữ liệu từ WordForm, gọi API cập nhật word
     async createOrUpdate(updatedWord) {
       try {
         await updateWord(updatedWord);
@@ -65,3 +78,42 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* Panel lỗi khi không tìm thấy từ vựng */
+.word-load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1.5rem !important;
+  text-align: center;
+}
+.word-load-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  margin-bottom: 0.4rem;
+}
+.word-load-error-icon .icon {
+  margin: 0 !important;
+}
+.word-load-error h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.word-load-error p {
+  margin: 0 0 0.6rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+</style>

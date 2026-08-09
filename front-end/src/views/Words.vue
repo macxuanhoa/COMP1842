@@ -8,9 +8,18 @@
       </div>
 
       <div class="workspace-header-actions">
+        <button
+          type="button"
+          class="ui basic primary button"
+          @click="isImportExportOpen = true"
+          title="Import or Export vocabulary"
+        >
+          <i class="exchange icon"></i>
+          Import / Export
+        </button>
         <router-link to="/words/new" class="ui primary button">
           <i class="plus icon"></i>
-          Add new word
+          Add New Word
         </router-link>
       </div>
     </header>
@@ -22,22 +31,43 @@
           <p>Narrow the library without changing your saved words.</p>
         </div>
 
-        <span class="workspace-panel-icon">
-          <i class="filter icon"></i>
-        </span>
+        <div class="library-panel-actions">
+          <button
+            v-if="hasActiveFilters"
+            type="button"
+            class="ui basic compact button reset-filter-btn"
+            @click="resetFilters"
+            title="Reset all filters"
+          >
+            <i class="undo icon"></i> Reset Filters
+          </button>
+          <span class="workspace-panel-icon">
+            <i class="filter icon"></i>
+          </span>
+        </div>
       </div>
 
       <div class="ui form">
         <div class="field">
-          <label><i class="search icon"></i> Search</label>
+          <label for="search-input" class="clickable-label" @click="focusField('searchInput')">
+            <i class="search icon"></i> Search
+          </label>
 
-          <div class="ui icon input fluid">
+          <div class="ui icon input fluid search-input-wrapper">
             <input
+              id="search-input"
+              ref="searchInput"
               type="text"
               placeholder="Search words in English, German, or French..."
               v-model="searchText"
             />
-            <i class="search icon"></i>
+            <i
+              v-if="searchText"
+              class="times icon clear-search-icon"
+              title="Clear search"
+              @click="clearSearch"
+            ></i>
+            <i v-else class="search icon"></i>
           </div>
         </div>
 
@@ -86,8 +116,8 @@
           <h2>Vocabulary entries</h2>
 
           <p>
-            {{ visibleWords.length }}
-            {{ visibleWords.length === 1 ? 'word' : 'words' }} in this view
+            {{ visibleItems.length }}
+            {{ visibleItems.length === 1 ? 'word' : 'words' }} in this view
           </p>
         </div>
 
@@ -97,7 +127,7 @@
       </div>
 
       <div> <!-- // không có dữ liệu Read - gợi ý tạo mới-->
-        <div v-if="visibleWords.length === 0" class="library-empty-state">
+        <div v-if="visibleItems.length === 0" class="library-empty-state">
           <div class="library-empty-icon">
             <i class="search icon"></i>
           </div>
@@ -143,8 +173,8 @@
               </tr>
             </thead>
 
-            <tbody> <!-- tr hiển thị sau khi tính xong visibleWords trên bảng Read -->
-              <tr v-for="word in visibleWords" :key="word._id">
+            <tbody> <!-- tr hiển thị sau khi tính xong visibleItems trên bảng Read -->
+              <tr v-for="word in visibleItems" :key="word._id">
                 <td
                   class="center aligned favourite-cell"
                   title="Toggle favourite"
@@ -156,9 +186,7 @@
                 <!-- English -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text">
-                      {{ word.english }}
-                    </span>
+                    <span class="language-text" v-html="highlightMatch(word.english, searchText)"></span>
 
                     <button
                       type="button"
@@ -174,9 +202,7 @@
                 <!-- German -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text">
-                      {{ word.german }}
-                    </span>
+                    <span class="language-text" v-html="highlightMatch(word.german, searchText)"></span>
 
                     <button
                       type="button"
@@ -192,9 +218,7 @@
                 <!-- French -->
                 <td>
                   <div class="language-with-audio">
-                    <span class="language-text">
-                      {{ word.french }}
-                    </span>
+                    <span class="language-text" v-html="highlightMatch(word.french, searchText)"></span>
 
                     <button
                       type="button"
@@ -236,7 +260,7 @@
                       type="button"
                       class="ui icon mini basic negative button"
                       title="Delete word"
-                      @click="deleteWordItem(word)"
+                      @click="triggerDeleteWord(word)"
                     >
                       <i class="trash icon"></i>
                     </button>
@@ -285,21 +309,49 @@
         </div>
       </div>
     </section>
+
+    <!-- Custom Delete Confirmation Dialog -->
+    <confirm-modal
+      :is-open="isConfirmOpen"
+      title="Delete Vocabulary Word"
+      :message="deleteMessage"
+      confirm-text="Delete Word"
+      cancel-text="Cancel"
+      @confirm="onConfirmDelete"
+      @cancel="onCancelDelete"
+    />
+
+    <!-- Import & Export Modal -->
+    <import-export-modal
+      :is-open="isImportExportOpen"
+      :categories="categories"
+      :words="words"
+      :filtered-words="filteredWords"
+      @close="isImportExportOpen = false"
+      @imported="loadPageData"
+    />
   </div>
 </template>
 
 <script>
 // ── Trang thư viện từ vựng ───────────────────────────────────────────
-// Hiển thị toàn bộ words dạng bảng, có tìm kiếm, lọc, sắp xếp, phân trang
+// Hiển thị toàn bộ words dạng bảng, có tìm kiếm, lọc, sắp xếp, phân trang, tô sáng từ khóa & xuất/nhập từ vựng
 import {
   getWords,
   updateWord,
   deleteWord,
-  getCategories
+  getCategories,
+  speakWord
 } from '../helpers/helpers';
+import { paginationMixin, focusFieldMixin } from '../helpers/mixins';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import ImportExportModal from '../components/ImportExportModal.vue';
 
 export default {
   name: 'words',
+  components: { ConfirmModal, ImportExportModal },
+  mixins: [paginationMixin, focusFieldMixin],
+  // Khởi tạo các trạng thái dữ liệu cho trang thư viện từ vựng
   data() {
     return {
       words: [],                   // tất cả words từ database
@@ -308,8 +360,9 @@ export default {
       selectedCategoryId: '',        // category đang lọc ('' = tất cả)
       selectedFavouriteFilter: 'all', // 'all' | 'fav' | 'normal'
       selectedSortOrder: 'newest', // 'newest' | 'oldest'
-      currentPage: 1,              // trang hiện tại
-      pageSize: 8                  // số từ mỗi trang
+      isConfirmOpen: false,        // Cờ hiển thị dialog xóa
+      wordToDelete: null,          // Từ vựng chuẩn bị xóa
+      isImportExportOpen: false    // Cờ hiển thị modal Import/Export
     };
   },
   watch: {
@@ -318,15 +371,30 @@ export default {
     selectedCategoryId: 'resetPage',
     selectedFavouriteFilter: 'resetPage',
     selectedSortOrder: 'resetPage',
-    // Sau khi lọc dữ liệu tại trang 4, lọc xong còn 2 trang → lùi về trang cuối để tránh lỗi hiển thị
-    filteredWords() {
-      if (this.currentPage > this.totalPages) {
-        this.currentPage = this.totalPages;
-      }
+    // Theo dõi route query để áp dụng lọc category nếu chuyển từ Category Manager
+    '$route.query.category': {
+      handler(newCategory) {
+        if (newCategory !== undefined) {
+          this.selectedCategoryId = newCategory || '';
+        }
+      },
+      immediate: true
     }
   },
   computed: {
-    // filteredWords = bản sao dữ liệu + (lọc + sắp xếp) --> sau đó return dữ liệu cuối cùng
+    hasActiveFilters() {
+      return Boolean(
+        this.searchText ||
+        this.selectedCategoryId ||
+        this.selectedFavouriteFilter !== 'all' ||
+        this.selectedSortOrder !== 'newest'
+      );
+    },
+    deleteMessage() {
+      if (!this.wordToDelete) return '';
+      return `Are you sure you want to delete "${this.wordToDelete.english}" (${this.wordToDelete.german})? This action cannot be undone.`;
+    },
+    // Computed property lọc và sắp xếp từ vựng
     filteredWords() {
       const searchValue = this.searchText.trim().toLowerCase();
       let result = [...this.words];
@@ -340,7 +408,7 @@ export default {
       }
 
       if (this.selectedCategoryId) { //lọc theo category
-        result = result.filter(word => word.category._id === this.selectedCategoryId);
+        result = result.filter(word => word.category && word.category._id === this.selectedCategoryId);
       }
 
       if (this.selectedFavouriteFilter === 'fav') { //lọc theo favourite
@@ -359,56 +427,48 @@ export default {
 
       return result;
     },
-    // ── Phân trang ───────────────────────────────────────────────────
-    totalPages() { //tính xem cần bao nhiêu trang (quy định 8 từ/trang)
-      return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
+    // Nguồn dữ liệu & nhãn cho paginationMixin (logic phân trang dùng chung)
+    paginationItems() {
+      return this.filteredWords;
     },
-    visibleWords() {  //khi đang ở trang nào thì lấy đúng nhóm từ của trang đó (0-8, 8-16, 16-24,...)
-      const start = (this.currentPage - 1) * this.pageSize; //start từ kết quả ví dụ 8, 16, 24,25,26... (tùy trang)
-      return this.filteredWords.slice(start, start + this.pageSize); 
-    },
-    paginationSummary() {
-      const total = this.filteredWords.length;
-      if (total === 0) return '0 words';
-
-      // Vị trí từ đầu tiên ví dụ 1, 9, 17,...
-      const start = (this.currentPage - 1) * this.pageSize + 1;
-      // Vị trí từ cuối cùng của trang đang đứng
-      const end = Math.min(start + this.pageSize - 1, total);
-
-      return `Showing ${start}–${end} of ${total} words`;
+    paginationLabel() {
+      return 'words';
     }
   },
+  // Lifecycle hook mounted
   mounted() {
     this.loadPageData();
   },
   methods: {
-    // Reset về trang 1 (gọi khi filter thay đổi)
-    resetPage() {
-      this.currentPage = 1;
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-      }
-    },
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
-    },
-    goToPage(page) {
-      this.currentPage = page; // tính lại currentPage ở visib
+    // Tô sáng chữ khớp với từ khóa tìm kiếm (Mục số 1)
+    highlightMatch(text, query) {
+      if (!text) return '';
+      const search = query ? query.trim() : '';
+      if (!search) return text;
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escaped})`, 'gi');
+      return text.replace(regex, '<mark class="search-highlight">$1</mark>');
     },
 
-    // Phát âm thanh bằng Web Speech API của trình duyệt
-    speakWord(text, languageCode) {
-      if (!text || !window.speechSynthesis) return; //Nếu không có từ hoặc trình duyệt không hỗ trợ đọc giọng nói thì dừng hàm.
-      window.speechSynthesis.cancel(); //Dừng âm thanh đang đọc trước đó, tránh nhiều giọng đọc chồng lên nhau.
-      const utterance = new SpeechSynthesisUtterance(text); //Tạo một đối tượng chứa nội dung cần đọc.
-      utterance.lang = languageCode; //Gán ngôn ngữ phát âm cho nội dung utterance
-      window.speechSynthesis.speak(utterance);
+    // Clear ô tìm kiếm
+    clearSearch() {
+      this.searchText = '';
+      this.focusField('searchInput');
     },
+    // Reset tất cả bộ lọc
+    resetFilters() {
+      this.searchText = '';
+      this.selectedCategoryId = '';
+      this.selectedFavouriteFilter = 'all';
+      this.selectedSortOrder = 'newest';
+      this.currentPage = 1;
+      if (this.$route.query.category) {
+        this.$router.replace({ query: {} });
+      }
+    },
+
+    // Phát âm thanh bằng Web Speech API (helper dùng chung trong helpers.js)
+    speakWord,
 
     // Load words + categories từ API
     async loadPageData() {
@@ -416,6 +476,9 @@ export default {
         const [wordsData, categoriesData] = await Promise.all([getWords(), getCategories()]);
         this.words = wordsData;
         this.categories = categoriesData;
+        if (this.$route.query.category) {
+          this.selectedCategoryId = this.$route.query.category;
+        }
       } catch {
         this.flash('Failed to load vocabulary data.', 'error');
       }
@@ -424,16 +487,13 @@ export default {
     // ── Bật/tắt yêu thích ──────────────────────────────────────────
     async toggleFavourite(word) {
       try {
-        // Gửi trạng thái ngược lại lên server
         const updatedWord = await updateWord({
           _id: word._id,
           favourite: !word.favourite
         });
 
-        // Chỉ cập nhật đúng trường favourite — không đụng đến các trường khác
         word.favourite = updatedWord.favourite;
 
-        // Hiển thị thông báo
         this.flash(
           word.favourite
             ? 'Added to Favourites!'
@@ -446,23 +506,26 @@ export default {
       }
     },
 
-    // ── Xóa từ sau khi xác nhận ────────────────────────────────────
-    async deleteWordItem(wordToDelete) {
-      // 1. Hỏi xác nhận
-      const confirmed = window.confirm('Are you sure you want to delete this word?');
-      if (!confirmed) return;
-
+    // ── Xóa từ với Dialog tinh tế ─────────────────────────────────
+    triggerDeleteWord(word) {
+      this.wordToDelete = word;
+      this.isConfirmOpen = true;
+    },
+    onCancelDelete() {
+      this.isConfirmOpen = false;
+      this.wordToDelete = null;
+    },
+    async onConfirmDelete() {
+      if (!this.wordToDelete) return;
       try {
-        // 2. Gửi lên server để xóa
-        await deleteWord(wordToDelete._id);
-
-        // 3. Loại bỏ từ khỏi mảng (giữ lại những từ khác id)
-        this.words = this.words.filter(eachWord => eachWord._id !== wordToDelete._id);
-
-        // 4. Hiển thị thông báo
+        await deleteWord(this.wordToDelete._id);
+        this.words = this.words.filter(w => w._id !== this.wordToDelete._id);
         this.flash('Word deleted successfully!', 'success');
       } catch {
         this.flash('Failed to delete the word.', 'error');
+      } finally {
+        this.isConfirmOpen = false;
+        this.wordToDelete = null;
       }
     }
   }
@@ -477,17 +540,15 @@ export default {
 .library-filters,
 .library-panel {
   margin: 0 !important;
-  padding: 1.6rem !important;
+  padding: 1.25rem !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  border-radius: 10px !important;
-  box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.04),
-    0 6px 16px rgba(15, 23, 42, 0.02) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .library-panel {
-  margin-top: 1.5rem !important;
+  margin-top: 1.25rem !important;
 }
 
 .library-panel-heading {
@@ -495,24 +556,70 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .library-panel-heading h2 {
   margin: 0;
   color: #0f172a;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
   letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .library-panel-heading p {
-  margin: 0.2rem 0 0;
+  margin: 0.15rem 0 0;
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.4;
+}
+
+.library-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reset-filter-btn {
+  font-size: 0.8rem !important;
+  padding: 0.4rem 0.75rem !important;
+  border-radius: 4px !important;
+  color: #64748b !important;
+  border-color: #cbd5e1 !important;
+  margin: 0 !important;
+}
+.reset-filter-btn:hover {
+  color: #0f172a !important;
+  background: #f8fafc !important;
+}
+
+.clickable-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.clear-search-icon {
+  position: absolute !important;
+  right: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  left: auto !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  color: #94a3b8 !important;
+  font-size: 1rem !important;
+  transition: color 0.15s ease !important;
+}
+
+.clear-search-icon:hover {
+  color: #ef4444 !important;
 }
 
 .library-filter-grid {
@@ -529,14 +636,18 @@ export default {
 .library-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .library-table {
   margin: 0 !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
 }
 
 .library-table .favourite-column {
-  width: 50px;
+  width: 46px;
 }
 
 .library-table .language-column {
@@ -544,27 +655,39 @@ export default {
 }
 
 .library-table .category-column {
-  width: 140px;
+  width: 150px;
 }
 
 .library-table .actions-column {
-  width: 130px;
+  width: 128px;
 }
 
 .library-table th {
-  padding-top: 0.85rem !important;
-  padding-bottom: 0.85rem !important;
-  color: #0f172a !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  color: #64748b !important;
   background: #f8fafc !important;
-  border-bottom: 1px solid #cbd5e1 !important;
-  font-size: 0.76rem !important;
-  font-weight: 700 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
 }
 
 .library-table td {
   vertical-align: middle !important;
+  padding: 0.7rem 0.75rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155;
+  font-size: 0.875rem;
+}
+
+.library-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+.library-table tbody tr:last-child td {
+  border-bottom: none !important;
 }
 
 .favourite-cell {
@@ -574,7 +697,7 @@ export default {
 .language-with-audio {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .language-text {
@@ -587,43 +710,50 @@ export default {
   white-space: nowrap;
 }
 
+/* Search Keyword Highlight */
+::v-deep .search-highlight {
+  background-color: #fef08a !important;
+  color: #854d0e !important;
+  padding: 0.05em 0.2em !important;
+  border-radius: 3px !important;
+  font-weight: 600 !important;
+}
+
 .language-audio-button {
   display: inline-flex;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   align-items: center;
   justify-content: center;
   padding: 0;
   color: #64748b;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 7px;
+  border-radius: 50%;
   cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .language-audio-button .icon {
   margin: 0 !important;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   line-height: 1;
 }
 
 .language-audio-button:hover {
-  color: #0284c7;
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .language-audio-button:active {
-  background: #e0f2fe;
+  transform: scale(0.94);
 }
 
 .language-audio-button:focus-visible {
-  outline: 2px solid rgba(2, 132, 199, 0.18);
+  outline: 2px solid rgba(59, 130, 246, 0.35);
   outline-offset: 2px;
 }
 
@@ -631,12 +761,12 @@ export default {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.3rem !important;
-  padding: 0.3em 0.65em !important;
-  color: #30394a !important;
-  background: #f7f9fb !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 6px !important;
-  font-weight: 600 !important;
+  padding: 0.25em 0.6em !important;
+  color: #334155 !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
 }
 
 .category-label > span {
@@ -651,12 +781,13 @@ export default {
 .library-row-actions {
   display: flex;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .library-row-actions .ui.button {
   margin: 0;
-  padding: 0.55rem 0.6rem !important;
+  padding: 0.4rem 0.5rem !important;
+  border-radius: 4px !important;
 }
 
 .library-pagination {
@@ -671,35 +802,35 @@ export default {
 
 .pagination-summary {
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .pagination-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   padding: 0.4rem 0.75rem;
   color: #0f172a;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  color: #0284c7;
+  color: #3b82f6;
   background: #f8fafc;
-  border-color: #0284c7;
+  border-color: #93c5fd;
 }
 
 .pagination-btn:disabled {
@@ -717,9 +848,9 @@ export default {
   color: #334155;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -733,7 +864,7 @@ export default {
   color: #ffffff;
   background: #0f172a;
   border-color: #0f172a;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .library-empty-state {
@@ -741,12 +872,12 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
-  padding: 3rem 1.75rem;
-  color: #687386;
-  background: #fafbfc;
-  border: 1px dashed #d9dee7;
-  border-radius: 12px;
+  gap: 1rem;
+  padding: 2.5rem 1.5rem;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
   text-align: center;
 }
 
@@ -754,27 +885,27 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9aa3b3;
+  color: #9ca3af;
 }
 
 .library-empty-icon .icon {
   margin: 0 !important;
-  font-size: 2.75rem;
+  font-size: 2rem;
   line-height: 1;
 }
 
 .library-empty-text {
   max-width: 420px;
-  color: #3c4557;
-  font-size: 1.05rem;
-  font-weight: 600;
+  color: #4b5563;
+  font-size: 0.95rem;
+  font-weight: 500;
   line-height: 1.5;
 }
 
 .library-empty-button {
   margin: 0.25rem 0 0 0 !important;
-  padding: 0.85rem 1.6rem !important;
-  border-radius: 8px !important;
-  font-size: 0.95rem;
+  padding: 0.6rem 1.25rem !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem;
 }
 </style>

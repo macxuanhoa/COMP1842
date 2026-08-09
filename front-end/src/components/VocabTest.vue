@@ -12,16 +12,16 @@
           <i class="close icon"></i>
           Exit
         </button>
-      </div> 
-
+      </div>
+      
       <div v-if="!isTestOver" class="learning-progress-meta">
         <span>
-          <strong>Question</strong>
-          {{ answeredCount + 1 > totalQuestions ? totalQuestions : answeredCount + 1 }} of {{ totalQuestions }}
+          <strong>Question</strong> 
+          {{ answeredCount + 1 > totalQuestions ? totalQuestions : answeredCount + 1 }} of {{ totalQuestions }}   
         </span>
         <span>
           <strong>Current Score</strong>
-          <span class="ui green text">{{ score }}</span> / {{ totalQuestions }}
+          <span class="ui green text">{{ score }} / {{ totalQuestions }}</span> 
         </span>
       </div>
       <div v-if="!isTestOver" class="ui tiny progress success learning-progress">
@@ -52,7 +52,6 @@
               autocomplete="off"
               ref="answerInput"
               :disabled="isWaitingNext"
-              required
             />
           </div>
         </div>
@@ -69,6 +68,7 @@
           v-if="!isWaitingNext"
           class="ui primary fluid button icon labeled"
           type="submit"
+          :disabled="!userAnswer.trim()"
         >
           <i class="check icon"></i>
           Submit Answer
@@ -97,7 +97,7 @@
         </div>
 
         <div v-if="wrongAnswers.length > 0" class="quiz-review">
-          <h4><i class="attention icon"></i> Needs review</h4>
+          <h4><i class="attention icon"></i> Needs Review</h4>
           <div class="quiz-review-table">
             <table class="ui celled compact table">
               <thead>
@@ -141,57 +141,69 @@
 <script>
 // ── Component quiz từ vựng ───────────────────────────────────────────
 // Nhận danh sách words và 2 ngôn ngữ (hỏi/đáp), tổ chức quiz và chấm điểm
+import { QUIZ_HISTORY_KEY, LANGUAGE_DETAILS } from '../helpers/helpers';
+
 export default {
+  // Tên của component
   name: 'vocab-test',
+  // Các props truyền vào từ component cha (Test.vue)
   props: {
-    words: { type: Array, required: true },            // danh sách từ để test
-    questionLanguage: { type: String, default: 'german' }, // ngôn ngữ câu hỏi
-    answerLanguage: { type: String, default: 'english' }   // ngôn ngữ câu trả lời
+    words: { type: Array, required: true },            // Danh sách các từ vựng cần kiểm tra (mảng các object từ vựng)
+    questionLanguage: { type: String, default: 'german' }, // Ngôn ngữ làm câu hỏi (mặc định: 'german')
+    answerLanguage: { type: String, default: 'english' }   // Ngôn ngữ làm câu trả lời (mặc định: 'english')
   },
+  // Khởi tạo dữ liệu trạng thái nội bộ cho bài kiểm tra
   data() {
     return {  
-      remainingWords: [...this.words], // sao chép danh sách đã được cha xáo trộn sẵn
-      wrongAnswers: [],     // danh sách câu trả lời sai (để review cuối)
-      userAnswer: '',       // câu trả lời hiện tại của user
-      score: 0,             // số câu đúng
-      answeredCount: 0,     // số câu đã trả lời
-      totalQuestions: this.words.length, // tổng số câu hỏi
-      isTestOver: false,      // bài test đã kết thúc chưa
-      feedback: null,       // 'correct' hoặc 'wrong' (null = chưa trả lời)
-      lastCorrectAnswer: '',// đáp án đúng của câu vừa làm (hiển thị khi sai)
-      isWaitingNext: false,   // đang chờ user nhấn "Next Question"
-      languageDetails: {    // metadata cờ + tên cho 3 ngôn ngữ
-        german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
-        english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
-        french:  { name: 'French',  code: 'FR', flag: 'france flag' }
-      }
+      remainingWords: [...this.words], // Sao chép danh sách từ vựng từ props để xoay vòng các câu hỏi
+      wrongAnswers: [],     // Lưu danh sách các câu trả lời sai kèm đáp án người dùng đã nhập (dùng cho review cuối bài)
+      userAnswer: '',       // Chuỗi câu trả lời người dùng nhập vào ô input hiện tại
+      score: 0,             // Tổng số câu trả lời đúng của người dùng
+      answeredCount: 0,     // Tổng số câu hỏi người dùng đã hoàn thành
+      totalQuestions: this.words.length, // Tổng số lượng câu hỏi trong lượt test này
+      isTestOver: false,    // Cờ đánh dấu bài test đã hoàn thành hay chưa (true: đã xong, false: đang làm)
+      feedback: null,       // Trạng thái phản hồi câu làm: 'correct' (đúng), 'wrong' (sai), hoặc null (chưa trả lời)
+      lastCorrectAnswer: '',// Lưu đáp án đúng của câu vừa làm để hiển thị khi người dùng làm sai
+      isWaitingNext: false, // Cờ kiểm soát giao diện: true = đang hiện phản hồi & chờ bấm "Next Question"
+      // Metadata hiển thị tên, mã quốc gia và class icon cờ (dùng chung từ helpers.js)
+      languageDetails: LANGUAGE_DETAILS
     };
   },
   computed: {
+    // Đối tượng từ vựng hiện tại đang được đưa ra hỏi (từ đầu tiên trong danh sách remainingWords)
     currentWord() {
       return this.remainingWords.length ? this.remainingWords[0] : null;
     },
+    // Tính phần trăm tiến độ làm bài (% thanh tiến trình progress bar)
     progressPercent() {
       return Math.round((this.answeredCount / this.totalQuestions) * 100) || 0;
     },
+    // Tính phần trăm điểm số đạt được so với tổng số câu
     scorePercent() {
       return Math.round((this.score / this.totalQuestions) * 100) || 0;
     },
+    // Class CSS phản hồi dựa vào kết quả đúng ('positive') hay sai ('negative')
     feedbackClass() {
       return this.feedback === 'correct' ? 'positive' : 'negative';
     },
+    // Icon Semantic UI phản hồi kết quả câu hỏi (dấu tích xanh cho đúng, dấu nhân đỏ cho sai)
     feedbackIcon() {
       return this.feedback === 'correct' ? 'check circle icon' : 'times circle icon';
     },
-    // Lấy thông tin hiển thị cho ngôn ngữ câu hỏi và câu trả lời
+    // Lấy tên hiển thị của ngôn ngữ câu hỏi (VD: 'German')
     questionLanguageName() { return this.languageDetails[this.questionLanguage].name; },
+    // Lấy tên hiển thị của ngôn ngữ câu trả lời (VD: 'English')
     answerLanguageName()   { return this.languageDetails[this.answerLanguage].name; },
+    // Lấy mã ngắn của ngôn ngữ câu hỏi (VD: 'DE')
     questionLanguageCode() { return this.languageDetails[this.questionLanguage].code; },
+    // Lấy mã ngắn của ngôn ngữ câu trả lời (VD: 'EN')
     answerLanguageCode()   { return this.languageDetails[this.answerLanguage].code; },
+    // Lấy class icon cờ quốc gia cho ngôn ngữ câu hỏi
     questionLanguageFlag() { return this.languageDetails[this.questionLanguage].flag; },
+    // Lấy class icon cờ quốc gia cho ngôn ngữ câu trả lời
     answerLanguageFlag()   { return this.languageDetails[this.answerLanguage].flag; }
   },
-  // Khi mount: tự động focus vào ô nhập câu trả lời
+  // Hook lifecycle mounted: Tự động trỏ con trỏ chuột (focus) vào ô nhập liệu câu trả lời khi giao diện tải xong
   mounted() {
     this.$nextTick(() => {
       if (this.$refs.answerInput) {
@@ -201,26 +213,29 @@ export default {
   },
   methods: {
 
-    // Kiểm tra câu trả lời (so sánh không phân biệt hoa/thường, bỏ khoảng trắng)
+    // Xử lý nộp câu trả lời: So sánh đáp án nhập vào với đáp án chuẩn (bỏ khoảng trắng thừa & không phân biệt hoa/thường)
     submitAnswer() {
+      // Nút Submit đã disabled khi ô đáp án trống nên không bao giờ bật lỗi bất ngờ
+      if (!this.userAnswer.trim()) return;
+
       const correctValue = this.currentWord[this.answerLanguage].trim().toLowerCase();
       const userValue = this.userAnswer.trim().toLowerCase();
       const isCorrect = correctValue === userValue;
       this.lastCorrectAnswer = this.currentWord[this.answerLanguage];
 
       if (isCorrect) {
-        this.feedback = 'correct';
-        this.score += 1;
+        this.feedback = 'correct'; // Đặt phản hồi đúng
+        this.score += 1;          // Tăng số câu đúng
       } else {
-        this.feedback = 'wrong';
-        this.wrongAnswers.push({ word: this.currentWord, guess: this.userAnswer });
+        this.feedback = 'wrong';   // Đặt phản hồi sai
+        this.wrongAnswers.push({ word: this.currentWord, guess: this.userAnswer }); // Lưu lại từ sai và câu trả lời của user
       }
-      this.isWaitingNext = true;
+      this.isWaitingNext = true;   // Chuyển sang trạng thái chờ chuyển câu tiếp theo
     },
-    // Lưu kết quả quiz vào localStorage (giữ tối đa 50 lần gần nhất)
+    // Lưu lịch sử bài test vào localStorage của trình duyệt (giữ tối đa 50 bản ghi gần nhất)
     saveResult() {
       const wrongWordIds = this.wrongAnswers.map(wrongAnswer => wrongAnswer.word._id);
-      const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
+      const history = JSON.parse(localStorage.getItem(QUIZ_HISTORY_KEY) || '[]');
       history.unshift({
         score: this.score,
         total: this.totalQuestions,
@@ -229,22 +244,23 @@ export default {
         wrongWordIds: wrongWordIds
       });
       if (history.length > 50) {
-        history.pop();
+        history.pop(); // Loại bỏ bản ghi cũ nhất nếu vượt quá 50 bài
       }
-      localStorage.setItem('coursework03_quiz_history', JSON.stringify(history));
+      localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(history));
     },
-    // Chuyển sang câu hỏi tiếp theo (hoặc kết thúc nếu hết câu)
+    // Chuyển sang câu hỏi tiếp theo: Xóa từ hiện tại khỏi danh sách chờ, hoặc kết thúc bài test nếu hết câu hỏi
     nextQuestion() {
       this.answeredCount += 1;
       this.feedback = null;
       this.isWaitingNext = false;
       this.userAnswer = '';
-      this.remainingWords.shift();
+      this.remainingWords.shift(); // Loại bỏ từ vừa hỏi khỏi mảng
 
       if (this.remainingWords.length === 0) {
-        this.isTestOver = true;
-        this.saveResult();
+        this.isTestOver = true; // Đánh dấu hoàn thành bài test
+        this.saveResult();      // Lưu kết quả vào localStorage
       } else {
+        // Tự động focus lại ô nhập liệu cho câu hỏi tiếp theo
         this.$nextTick(() => {
           if (this.$refs.answerInput) {
             this.$refs.answerInput.focus();

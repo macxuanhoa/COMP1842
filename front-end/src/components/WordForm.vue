@@ -6,26 +6,47 @@
 
     <div class="word-form-languages">
       <div class="field">
-        <label>German</label>
+        <label for="german-input" class="clickable-label" @click="focusField('germanInput')">German</label>
         <div class="ui labeled input fluid">
           <div class="ui label"><i class="germany flag"></i> DE</div>
-          <input type="text" placeholder="Enter German word..." v-model.trim="word.german" maxlength="80" />
+          <input
+            id="german-input"
+            ref="germanInput"
+            type="text"
+            placeholder="Enter German word..."
+            v-model.trim="word.german"
+            maxlength="80"
+          />
         </div>
       </div>
 
       <div class="field">
-        <label>English</label>
+        <label for="english-input" class="clickable-label" @click="focusField('englishInput')">English</label>
         <div class="ui labeled input fluid">
           <div class="ui label"><i class="united kingdom flag"></i> EN</div>
-          <input type="text" placeholder="Enter English word..." v-model.trim="word.english" maxlength="80" />
+          <input
+            id="english-input"
+            ref="englishInput"
+            type="text"
+            placeholder="Enter English word..."
+            v-model.trim="word.english"
+            maxlength="80"
+          />
         </div>
       </div>
 
       <div class="field">
-        <label>French</label>
+        <label for="french-input" class="clickable-label" @click="focusField('frenchInput')">French</label>
         <div class="ui labeled input fluid">
           <div class="ui label"><i class="france flag"></i> FR</div>
-          <input type="text" placeholder="Enter French word..." v-model.trim="word.french" maxlength="80" />
+          <input
+            id="french-input"
+            ref="frenchInput"
+            type="text"
+            placeholder="Enter French word..."
+            v-model.trim="word.french"
+            maxlength="80"
+          />
         </div>
       </div>
     </div>
@@ -54,8 +75,10 @@
     </div>
 
     <div v-if="isAddingCategory" class="field">
-      <label>New Category</label>
+      <label for="new-category-input" class="clickable-label" @click="focusField('newCategoryInput')">New Category</label>
       <input
+        id="new-category-input"
+        ref="newCategoryInput"
         type="text"
         placeholder="Enter category name..."
         v-model.trim="newCategoryName"
@@ -86,54 +109,72 @@ import { getCategories, createCategory } from '../helpers/helpers';
 export default {
   name: 'WordForm',
   props: {
-    // Dữ liệu word được truyền từ component cha (New.vue hoặc Edit.vue)
     word: {
       type: Object,
       default: () => ({
-        german: '',
-        english: '',
-        french: '',
-        category: '',
-        favourite: false
+        german: '',    // Từ tiếng Đức
+        english: '',   // Từ tiếng Anh
+        french: '',    // Từ tiếng Pháp
+        category: '',  // ID danh mục
+        favourite: false // Trạng thái yêu thích
       })
     }
   },
   data() {
     return {
-      categories: [],
-      selectedCategoryId: '',
-      errorMessage: '',
-      isAddingCategory: false,
-      newCategoryName: '',
-      isSubmitting: false
+      categories: [],          // Danh sách các danh mục khả dụng lấy từ API
+      selectedCategoryId: '',  // ID của danh mục đang được chọn trong dropdown
+      errorMessage: '',        // Chuỗi thông báo lỗi hiển thị trên đầu form nếu có
+      isAddingCategory: false, // Cờ bật/tắt chế độ nhập tên danh mục mới thay vì chọn sẵn
+      newCategoryName: '',     // Chuỗi tên danh mục mới khi người dùng đang ở chế độ tạo danh mục mới
+      isSubmitting: false      // Cờ trạng thái đang gửi form
     };
   },
-  // Khi component mount: tải danh sách category và đặt category hiện tại
+  watch: {
+    word: {
+      immediate: true,
+      handler(newWord) {
+        if (newWord && newWord._id) {
+          if (newWord.category && newWord.category._id) {
+            this.selectedCategoryId = newWord.category._id;
+          } else if (newWord.category) {
+            this.selectedCategoryId = newWord.category;
+          }
+        }
+      }
+    }
+  },
   async mounted() {
     try {
       this.categories = await getCategories();
 
-      if (this.word._id) {
-        // Edit mode: lấy _id từ object category đã populate
+      if (this.word && this.word._id) {
         if (this.word.category && this.word.category._id) {
           this.selectedCategoryId = this.word.category._id;
         } else if (this.word.category) {
           this.selectedCategoryId = this.word.category;
         }
       } else {
-        // Create mode: chọn category đầu tiên, hoặc bật chế độ tạo mới nếu chưa có
-        if (this.categories.length > 0) {
-          this.selectedCategoryId = this.categories[0]._id;
-        } else {
-          this.isAddingCategory = true;
+        if (!this.selectedCategoryId) {
+          if (this.categories.length > 0) {
+            this.selectedCategoryId = this.categories[0]._id;
+          } else {
+            this.isAddingCategory = true;
+          }
         }
       }
-    } catch (error) {
+    } catch {
       this.flash('Failed to load categories.', 'error');
     }
   },
   methods: {
-    // Bật/tắt chế độ tạo category mới ngay trong form
+    focusField(refName) {
+      this.$nextTick(() => {
+        if (this.$refs[refName]) {
+          this.$refs[refName].focus();
+        }
+      });
+    },
     toggleCategoryInput() {
       this.isAddingCategory = !this.isAddingCategory;
       this.errorMessage = '';
@@ -142,13 +183,38 @@ export default {
         if (this.categories.length > 0 && !this.selectedCategoryId) {
           this.selectedCategoryId = this.categories[0]._id;
         }
+      } else {
+        this.focusField('newCategoryInput');
       }
     },
-    // Xử lý khi nhấn Save: validate → tạo category (nếu cần) → emit payload
     async onSubmit() {
-      // Validate 3 ngôn ngữ
-      if (!this.word.german || !this.word.english || !this.word.french) {
-        this.errorMessage = 'Please fill in all required fields.';
+      const missing = [];
+      if (!this.word.german || !this.word.german.trim()) missing.push('German');
+      if (!this.word.english || !this.word.english.trim()) missing.push('English');
+      if (!this.word.french || !this.word.french.trim()) missing.push('French');
+
+      if (this.isAddingCategory && (!this.newCategoryName || !this.newCategoryName.trim())) {
+        missing.push('New Category');
+      }
+
+      // 1. Validate missing fields
+      const totalExpected = this.isAddingCategory ? 4 : 3;
+      if (missing.length > 0) {
+        if (missing.length === totalExpected) {
+          this.errorMessage = 'Please fill in all required fields.';
+        } else {
+          if (missing.length === 1) {
+            if (missing[0] === 'New Category') {
+              this.errorMessage = 'Please enter New Category name.';
+            } else {
+              this.errorMessage = `Please enter ${missing[0]} word.`;
+            }
+          } else {
+            const last = missing.pop();
+            const joined = missing.join(', ');
+            this.errorMessage = `Please enter ${joined} and ${last}.`;
+          }
+        }
         return;
       }
 
@@ -157,15 +223,9 @@ export default {
 
       let categoryId = this.selectedCategoryId;
 
-      // Nếu đang tạo category mới: gọi API tạo category trước
+      // 2. Validate & Create New Category if active
       if (this.isAddingCategory) {
         const name = this.newCategoryName.trim();
-
-        if (!name) {
-          this.errorMessage = 'Category name is required.';
-          this.isSubmitting = false;
-          return;
-        }
 
         if (name.length < 2) {
           this.errorMessage = 'Category name must be at least 2 characters.';
@@ -192,14 +252,12 @@ export default {
         }
       }
 
-      // Validate phải có category
       if (!categoryId) {
         this.errorMessage = 'Please select or create a category.';
         this.isSubmitting = false;
         return;
       }
 
-      // Tạo payload sạch
       const payload = {
         german: this.word.german.trim(),
         english: this.word.english.trim(),
@@ -219,6 +277,15 @@ export default {
 </script>
 
 <style scoped>
+.clickable-label {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.clickable-label:hover {
+  color: #0284c7 !important;
+}
+
 .word-form-languages {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
