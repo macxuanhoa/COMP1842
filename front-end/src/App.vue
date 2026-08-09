@@ -311,13 +311,32 @@ body {
   line-height: 1.4;
 }
 .workspace-panel-icon {
-  color: #64748b;
+  display: grid;
+  place-items: center;
   flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: #475569;
 }
 .workspace-panel-icon .icon {
+  display: block;
   margin: 0 !important;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   line-height: 1;
+}
+.workspace-panel-icon.green {
+  background: #ecfdf5;
+  color: #059669;
+}
+.workspace-panel-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.workspace-panel-icon.yellow {
+  background: #fffbeb;
+  color: #d97706;
 }
 
 /* Crisp Action Controls */
@@ -346,44 +365,40 @@ body {
   font-size: 0.9rem !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
-.ui.form input:focus, .ui.form select:focus {
-  border-color: #0284c7 !important;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12) !important;
+.ui.form input:focus, .ui.form select:focus,
+.ui.form textarea:focus,
+.ui.input input:focus,
+.ui.input textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+  outline: none !important;
 }
 
-/* Precise Optical Icon & Flag Alignment System */
-.workspace-eyebrow,
-.workspace-panel-title,
-.modal-title,
-.setup-section-title {
-  display: flex !important;
-  align-items: center !important;
+/* Search/icon inputs: icon đổi màu khi ô nhập đang focus */
+.ui.icon.input > input:focus ~ i.icon {
+  color: #3b82f6 !important;
+  transition: color 0.15s ease;
 }
 
-.workspace-eyebrow i.icon,
-.workspace-panel-title i.icon,
-.modal-title i.icon,
-.setup-section-title i.icon {
+/* Precise Optical Icon & Flag Alignment System
+   Chỉ áp dụng cho icon là con TRỰC TIẾP nằm cạnh chữ,
+   không đè lên icon trong chip / checkbox custom */
+.workspace-eyebrow > i.icon,
+.workspace-panel-title > i.icon,
+.modal-title > i.icon,
+.setup-section-title > i.icon {
   margin-right: 0.4rem !important;
   margin-left: 0 !important;
-  vertical-align: initial !important;
 }
 
-.ui.form .field > label i.icon,
-.ui.form .field > label i.flag,
 .ui.table th i.icon,
 .ui.table th i.flag,
-.ui.button i.icon,
 .ui.label i.icon,
 .ui.label i.flag {
   display: inline-block !important;
   vertical-align: -0.08em !important;
   margin-right: 0.35rem !important;
   margin-left: 0 !important;
-}
-
-.ui.button.icon:not(.labeled) i.icon {
-  margin-right: 0 !important;
 }
 
 .ui.action.input {
@@ -396,5 +411,122 @@ body {
 }
 input, select {
   box-sizing: border-box;
+}
+
+/* ── Chữ và icon căn giữa tuyệt đối trên mọi nút ─────────────────── */
+.ui.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 8px;
+}
+.ui.button > i.icon {
+  margin: 0 !important;
+  line-height: 1;
+}
+
+/* Cỡ chữ nút đồng nhất toàn ứng dụng */
+.ui.button:not(.mini):not(.tiny) {
+  font-size: 0.875rem;
+}
+
+/* Nút hành động trong bảng: khung trung tính đồng nhất, chỉ lên màu khi hover */
+.library-row-actions .ui.basic.button {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  box-shadow: none !important;
+}
+.library-row-actions .ui.basic.button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+.library-row-actions .ui.basic.primary.button:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+.library-row-actions .ui.basic.negative.button:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* ── Error / warning / success messages (dùng chung mọi trang) ───── */
+.ui.negative.message {
+  margin: 0 0 1.25rem;
+  padding: 0.8rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.5;
+  animation: messageSlideIn 0.18s ease-out;
+}
+.ui.negative.message::before {
+  content: none;
+}
+.ui.negative.message p {
+  margin: 0;
+}
+
+.ui.warning.message {
+  border-radius: 8px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.ui.success.message {
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Alignment & spacing polish ───────────────────────────────────── */
+.ui.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ui.label i.icon,
+.ui.label i.flag {
+  margin: 0 !important;
+}
+
+/* Khoảng cách nhất quán giữa các panel và heading trang */
+.workspace-page {
+  padding-top: 1.25rem;
+}
+.workspace-header {
+  margin-bottom: 1.75rem;
+}
+
+/* Ô checkbox alignment trong form */
+.ui.checkbox input[type='checkbox'],
+.ui.checkbox input[type='checkbox'] + label,
+.ui.checkbox input[type='checkbox'] ~ label {
+  font-size: 0.875rem;
 }
 </style>

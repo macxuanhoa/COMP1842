@@ -22,7 +22,7 @@
         <div class="workspace-panel-heading">
           <div class="workspace-panel-title">
             <span class="workspace-panel-icon green">
-              <i class="sliders horizontal icon"></i>
+              <i class="cog icon"></i>
             </span>
             <div>
               <h2>Session Setup</h2>
@@ -35,25 +35,22 @@
           <!-- Step 1: Language Direction -->
           <div class="setup-section">
             <div class="setup-section-title">
-              <i class="language icon"></i>
               <span>Language Pair</span>
             </div>
 
             <div class="language-pair-container">
               <div class="language-box">
                 <label for="q-lang">Question Language</label>
-                <div class="ui icon input fluid">
-                  <select
-                    id="q-lang"
-                    class="ui dropdown fluid setup-select"
-                    v-model="questionLanguage"
-                    @change="onQuestionLanguageChange"
-                  >
-                    <option value="german">🇩🇪 German (DE)</option>
-                    <option value="english">🇬🇧 English (EN)</option>
-                    <option value="french">🇫🇷 French (FR)</option>
-                  </select>
-                </div>
+                <select
+                  id="q-lang"
+                  class="setup-select"
+                  v-model="questionLanguage"
+                  @change="onQuestionLanguageChange"
+                >
+                  <option value="german">German (DE)</option>
+                  <option value="english">English (EN)</option>
+                  <option value="french">French (FR)</option>
+                </select>
               </div>
 
               <button
@@ -67,18 +64,16 @@
 
               <div class="language-box">
                 <label for="a-lang">Answer Language</label>
-                <div class="ui icon input fluid">
-                  <select
-                    id="a-lang"
-                    class="ui dropdown fluid setup-select"
-                    v-model="answerLanguage"
-                    @change="onAnswerLanguageChange"
-                  >
-                    <option value="german">🇩🇪 German (DE)</option>
-                    <option value="english">🇬🇧 English (EN)</option>
-                    <option value="french">🇫🇷 French (FR)</option>
-                  </select>
-                </div>
+                <select
+                  id="a-lang"
+                  class="setup-select"
+                  v-model="answerLanguage"
+                  @change="onAnswerLanguageChange"
+                >
+                  <option value="german">German (DE)</option>
+                  <option value="english">English (EN)</option>
+                  <option value="french">French (FR)</option>
+                </select>
               </div>
             </div>
           </div>
@@ -86,7 +81,6 @@
           <!-- Step 2: Word Set Scope -->
           <div class="setup-section">
             <div class="setup-section-title">
-              <i class="layer group icon"></i>
               <span>Word Set Scope</span>
             </div>
 
@@ -132,7 +126,7 @@
             <transition name="slide-fade">
               <div v-if="selectedWordSet === 'category'" class="category-select-sub">
                 <label><i class="tag icon"></i> Select Category</label>
-                <select class="ui dropdown fluid setup-select" v-model="selectedCategoryId">
+                <select class="setup-select" v-model="selectedCategoryId">
                   <option value="">Choose a category…</option>
                   <option v-for="category in categories" :key="category._id" :value="category._id">
                     {{ category.name }} ({{ words.filter(word => word.category && word.category._id === category._id).length }} words)
@@ -145,57 +139,59 @@
           <!-- Step 3: Question Count -->
           <div class="setup-section" v-if="selectedWordSet !== 'category'">
             <div class="setup-section-title">
-              <i class="list ol icon"></i>
               <span>Number of Questions</span>
             </div>
 
-            <div class="question-chips">
-              <button
-                type="button"
-                class="chip-btn"
-                :class="{ active: selectedQuestionCount === 'all' }"
-                @click="selectedQuestionCount = 'all'"
-              >
-                All ({{ availableWordCount }})
-              </button>
+            <div class="question-count-row">
+              <div class="question-chips">
+                <button
+                  type="button"
+                  class="chip-btn"
+                  :class="{ active: selectedQuestionCount === 'all' }"
+                  @click="selectedQuestionCount = 'all'"
+                >
+                  All ({{ availableWordCount }})
+                </button>
 
-              <button
-                v-for="count in questionSizeOptions"
-                :key="count"
-                type="button"
-                class="chip-btn"
-                :class="{ active: selectedQuestionCount === count }"
-                @click="selectedQuestionCount = count"
-              >
-                {{ count }} Questions
-              </button>
+                <button
+                  v-for="count in questionSizeOptions"
+                  :key="count"
+                  type="button"
+                  class="chip-btn"
+                  :class="{ active: selectedQuestionCount === count }"
+                  @click="selectedQuestionCount = count"
+                >
+                  {{ count }} Questions
+                </button>
 
-              <button
-                type="button"
-                class="chip-btn"
-                :class="{ active: selectedQuestionCount === 'custom' }"
-                @click="selectedQuestionCount = 'custom'"
-              >
-                Custom…
-              </button>
-            </div>
+                <button
+                  type="button"
+                  class="chip-btn"
+                  :class="{ active: selectedQuestionCount === 'custom' }"
+                  @click="selectedQuestionCount = 'custom'"
+                >
+                  Custom…
+                </button>
+              </div>
 
-            <div v-if="selectedQuestionCount === 'custom'" class="custom-count-sub">
-              <label>Custom Question Amount</label>
-              <input
-                type="number"
-                class="ui input"
-                v-model.number="customQuestionCount"
-                placeholder="Enter question amount"
-                min="5"
-                :max="availableWordCount"
-              />
+              <div v-if="selectedQuestionCount === 'custom'" class="custom-count-field">
+                <input
+                  id="custom-count"
+                  type="number"
+                  aria-label="Custom question amount"
+                  v-model.number="customQuestionCount"
+                  placeholder="5"
+                  min="5"
+                  :max="availableWordCount"
+                />
+                <span class="custom-count-hint">of {{ availableWordCount }} available</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Warning notices -->
-        <div v-if="availableWordCount === 0" class="ui warning message setup-warning"> 
+        <div v-if="availableWordCount === 0" class="ui warning message setup-warning">
           <i class="attention icon"></i>
           No words available in this selection. Add some words or select another scope first.
         </div>
@@ -204,19 +200,11 @@
           You need at least 5 words to start a test. Currently only {{ availableWordCount }} available in this scope.
         </div>
 
-        <!-- Summary & Action CTA -->
+        <!-- Action CTA -->
         <div class="setup-footer">
-          <div class="session-summary-badge" v-if="availableWordCount >= 5">
-            <i class="info circle icon"></i>
-            <span>
-              Configured: <strong>{{ langName(questionLanguage) }}</strong> &rarr; <strong>{{ langName(answerLanguage) }}</strong> | 
-              <strong>{{ effectiveQuestionCount }} questions</strong>
-            </span>
-          </div>
-
           <button
             class="ui primary large button icon labeled start-test-btn"
-            :disabled="availableWordCount < 5 || !hasValidQuestionCount" 
+            :disabled="availableWordCount < 5 || !hasValidQuestionCount"
             @click="startTest"
           >
             <i class="play icon"></i> Start Test Session
@@ -263,7 +251,7 @@ export default {
     };
   },
   computed: {
-    favouriteWordCount() { 
+    favouriteWordCount() {
       return this.words.filter(word => word.favourite).length;
     },
     selectedWords() {
@@ -278,20 +266,14 @@ export default {
     questionSizeOptions() {
       return [5, 10, 20].filter(count => count <= this.availableWordCount);
     },
-    hasValidQuestionCount() { 
+    hasValidQuestionCount() {
       if (this.selectedQuestionCount !== 'custom' || this.selectedWordSet === 'category') return true;
       const enteredQuestionCount = Number(this.customQuestionCount);
       return Number.isInteger(enteredQuestionCount) && enteredQuestionCount >= 5 && enteredQuestionCount <= this.availableWordCount;
-    },
-    effectiveQuestionCount() {
-      if (this.selectedWordSet === 'category') return this.availableWordCount;
-      if (this.selectedQuestionCount === 'custom') return Number(this.customQuestionCount) || 0;
-      if (this.selectedQuestionCount === 'all') return this.availableWordCount;
-      return Number(this.selectedQuestionCount);
     }
   },
   watch: {
-    availableWordCount(newMax) { 
+    availableWordCount(newMax) {
       this.customQuestionCount = newMax;
     }
   },
@@ -314,10 +296,6 @@ export default {
     }
   },
   methods: {
-    langName(code) {
-      const names = { german: 'German', english: 'English', french: 'French' };
-      return names[code] || code;
-    },
     swapLanguages() {
       const temp = this.questionLanguage;
       this.questionLanguage = this.answerLanguage;
@@ -325,13 +303,18 @@ export default {
     },
     onQuestionLanguageChange() {
       if (this.questionLanguage === this.answerLanguage) {
-        this.answerLanguage = this.questionLanguage === 'german' ? 'english' : 'german';
+        this.answerLanguage = this.randomLanguageExcluding(this.questionLanguage);
       }
     },
     onAnswerLanguageChange() {
       if (this.answerLanguage === this.questionLanguage) {
-        this.questionLanguage = this.answerLanguage === 'german' ? 'english' : 'german';
+        this.questionLanguage = this.randomLanguageExcluding(this.answerLanguage);
       }
+    },
+    // Chọn ngẫu nhiên 1 trong 2 ngôn ngữ khác ngôn ngữ bị loại
+    randomLanguageExcluding(excluded) {
+      const options = ['german', 'english', 'french'].filter(lang => lang !== excluded);
+      return options[Math.floor(Math.random() * options.length)];
     },
     shuffleArray(array) {
       for (let currentIndex = array.length - 1; currentIndex > 0; currentIndex--) {
@@ -378,46 +361,66 @@ export default {
 
 <style scoped>
 .session-setup-panel {
-  padding: 1.75rem !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.session-setup-panel .workspace-panel-heading {
+  margin-bottom: 0;
+  padding: 1.35rem 1.75rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .setup-grid {
+  counter-reset: setup-step;
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
 }
 
 .setup-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  padding: 1.35rem 1.75rem;
+}
+
+.setup-section + .setup-section {
+  border-top: 1px solid #f1f5f9;
 }
 
 .setup-section-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.92rem;
-  font-weight: 700;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
   color: #0f172a;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
-.setup-section-title .icon {
-  margin: 0 !important;
-  color: #0284c7;
+.setup-section-title::before {
+  counter-increment: setup-step;
+  content: '0' counter(setup-step);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
-/* Step 1: Language Pair */
+/* Language Pair */
 .language-pair-container {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  align-items: end;
   gap: 1rem;
-  padding: 1.1rem;
+  padding: 1.25rem;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #eef2f7;
   border-radius: 10px;
 }
 
@@ -428,80 +431,94 @@ export default {
 }
 
 .language-box label {
+  color: #334155;
   font-size: 0.8rem;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 500;
 }
 
 .setup-select {
-  border-color: #cbd5e1 !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
+  display: block;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.setup-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  outline: none;
 }
 
 .swap-lang-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 42px;
+  padding: 0.65rem 0;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #0284c7;
+  border-radius: 8px;
+  color: #64748b;
   cursor: pointer;
-  margin-top: 1.25rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
 .swap-lang-btn:hover {
-  background: #0284c7;
-  color: #ffffff;
-  border-color: #0284c7;
-  transform: rotate(180deg);
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #f8fafc;
 }
 
-/* Step 2: Scope Cards */
+.swap-lang-btn .icon {
+  margin: 0 !important;
+  line-height: 1;
+}
+
+/* Scope Cards */
 .word-set-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .word-set-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 1rem;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
   background: #ffffff;
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .word-set-card:hover {
   border-color: #94a3b8;
-  background: #f8fafc;
 }
 
 .word-set-card.active {
   border-color: #0f172a;
-  background: #f8fafc;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 1rem;
+  font-size: 0.95rem;
   flex: 0 0 auto;
 }
 
@@ -511,127 +528,158 @@ export default {
 }
 
 .card-icon.blue {
-  background: #f0f9ff;
-  color: #0284c7;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .card-icon .icon {
+  display: block;
   margin: 0 !important;
+  line-height: 1;
 }
 
 .card-info {
   display: flex;
   flex-direction: column;
+  gap: 0.1rem;
 }
 
 .card-info strong {
-  font-size: 0.9rem;
   color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .card-info span {
-  font-size: 0.78rem;
   color: #64748b;
+  font-size: 0.78rem;
 }
 
 .category-select-sub {
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
   padding: 1rem;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
 }
 
 .category-select-sub label {
   display: block;
-  font-size: 0.82rem;
+  margin-bottom: 0.4rem;
+  color: #475569;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.45rem;
 }
 
-/* Step 3: Question Chips */
+/* Question Chips — segmented control trải đều trong panel */
+.question-count-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+}
+
 .question-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  flex: 1 1 auto;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  background: #e8edf4;
+  border-radius: 10px;
 }
 
 .chip-btn {
-  padding: 0.55rem 1.1rem;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  color: #334155;
-  font-size: 0.86rem;
+  flex: 1 1 auto;
+  padding: 0.5rem 0.9rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #475569;
+  font-size: 0.82rem;
   font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .chip-btn:hover {
-  background: #f8fafc;
-  border-color: #0f172a;
+  color: #0f172a;
 }
 
 .chip-btn.active {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
-.custom-count-sub {
-  margin-top: 0.75rem;
-  max-width: 260px;
+.custom-count-field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 0 0 auto;
 }
 
-.custom-count-sub label {
-  display: block;
-  font-size: 0.8rem;
+.custom-count-field input {
+  width: 110px;
+  padding: 0.55rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #475569;
-  margin-bottom: 0.35rem;
+}
+
+.custom-count-field input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  outline: none;
+}
+
+.custom-count-hint {
+  color: #94a3b8;
+  font-size: 0.78rem;
 }
 
 .setup-warning {
-  margin-top: 1.5rem !important;
+  margin: 0 1.75rem 1.5rem !important;
 }
 
-/* Step 4: Footer CTA */
+/* Footer CTA */
 .setup-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.session-summary-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.95rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  color: #0369a1;
-  font-size: 0.85rem;
-}
-
-.session-summary-badge .icon {
-  margin: 0 !important;
+  padding: 1.25rem 1.75rem;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
 }
 
 .start-test-btn {
   margin: 0 !important;
-  padding: 0.85rem 1.75rem !important;
-  font-size: 0.98rem !important;
+  padding: 0.75rem 1.6rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
   border-radius: 8px !important;
 }
 
+.start-test-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
+  .setup-section {
+    padding: 1.25rem;
+  }
   .language-pair-container {
     grid-template-columns: 1fr;
   }
@@ -644,6 +692,9 @@ export default {
   .setup-footer {
     flex-direction: column;
     align-items: stretch;
+  }
+  .setup-warning {
+    margin: 0 1.25rem 1.25rem !important;
   }
 }
 </style>

@@ -16,6 +16,7 @@
             placeholder="Enter German word..."
             v-model.trim="word.german"
             maxlength="80"
+            @input="clearError"
           />
         </div>
       </div>
@@ -31,6 +32,7 @@
             placeholder="Enter English word..."
             v-model.trim="word.english"
             maxlength="80"
+            @input="clearError"
           />
         </div>
       </div>
@@ -46,6 +48,7 @@
             placeholder="Enter French word..."
             v-model.trim="word.french"
             maxlength="80"
+            @input="clearError"
           />
         </div>
       </div>
@@ -58,6 +61,7 @@
           class="ui fluid dropdown"
           v-model="selectedCategoryId"
           :disabled="isAddingCategory"
+          @change="clearError"
         >
           <option value="" disabled>Select a category…</option>
           <option
@@ -82,32 +86,41 @@
         type="text"
         placeholder="Enter category name..."
         v-model.trim="newCategoryName"
+        @input="clearError"
       />
     </div>
 
-    <div class="field word-form-favourite">
-      <div class="ui checkbox">
-        <input type="checkbox" id="favourite-check" v-model="word.favourite" />
-        <label for="favourite-check">
-          <strong><i class="star outline icon"></i> Favourite word</strong>
-          <span>Keep this word easy to find in your learning collection.</span>
-        </label>
-      </div>
+    <div class="field word-form-favourite" :class="{ 'favourite-active': word.favourite }">
+      <label for="favourite-check" class="favourite-label">
+        <input
+          type="checkbox"
+          id="favourite-check"
+          class="favourite-input"
+          v-model="word.favourite"
+        />
+        <span class="favourite-row">
+          <span class="favourite-box" aria-hidden="true"><i class="check icon"></i></span>
+          <strong><i class="star outline icon"></i> Favourite Word</strong>
+        </span>
+        <span class="favourite-desc">Keep this word easy to find in your learning collection.</span>
+      </label>
     </div>
 
     <div class="word-form-actions">
       <button class="ui primary button icon labeled" type="submit" :disabled="isSubmitting">
-        <i class="save icon"></i> Save word
+        <i class="save icon"></i> Save Word
       </button>
     </div>
   </form>
 </template>
 
 <script>
-import { getCategories, createCategory } from '../helpers/helpers';
+import { getCategories, createCategory, validateCategoryName } from '../helpers/helpers';
+import { focusFieldMixin } from '../helpers/mixins';
 
 export default {
   name: 'WordForm',
+  mixins: [focusFieldMixin],
   props: {
     word: {
       type: Object,
@@ -134,13 +147,7 @@ export default {
     word: {
       immediate: true,
       handler(newWord) {
-        if (newWord && newWord._id) {
-          if (newWord.category && newWord.category._id) {
-            this.selectedCategoryId = newWord.category._id;
-          } else if (newWord.category) {
-            this.selectedCategoryId = newWord.category;
-          }
-        }
+        this.syncCategoryIdFromWord(newWord);
       }
     }
   },
@@ -149,11 +156,7 @@ export default {
       this.categories = await getCategories();
 
       if (this.word && this.word._id) {
-        if (this.word.category && this.word.category._id) {
-          this.selectedCategoryId = this.word.category._id;
-        } else if (this.word.category) {
-          this.selectedCategoryId = this.word.category;
-        }
+        this.syncCategoryIdFromWord(this.word);
       } else {
         if (!this.selectedCategoryId) {
           if (this.categories.length > 0) {
@@ -168,12 +171,19 @@ export default {
     }
   },
   methods: {
-    focusField(refName) {
-      this.$nextTick(() => {
-        if (this.$refs[refName]) {
-          this.$refs[refName].focus();
+    // Người dùng bắt đầu nhập liệu → tắt thông báo lỗi đang hiển thị
+    clearError() {
+      if (this.errorMessage) this.errorMessage = '';
+    },
+    // Đồng bộ danh mục đang chọn từ dữ liệu word (dùng chung cho watch & mounted)
+    syncCategoryIdFromWord(word) {
+      if (word && word._id) {
+        if (word.category && word.category._id) {
+          this.selectedCategoryId = word.category._id;
+        } else if (word.category) {
+          this.selectedCategoryId = word.category;
         }
-      });
+      }
     },
     toggleCategoryInput() {
       this.isAddingCategory = !this.isAddingCategory;
@@ -227,14 +237,10 @@ export default {
       if (this.isAddingCategory) {
         const name = this.newCategoryName.trim();
 
-        if (name.length < 2) {
-          this.errorMessage = 'Category name must be at least 2 characters.';
-          this.isSubmitting = false;
-          return;
-        }
-
-        if (name.length > 40) {
-          this.errorMessage = 'Category name cannot exceed 40 characters.';
+        // Validate dùng chung (đồng bộ rule với backend)
+        const categoryError = validateCategoryName(name);
+        if (categoryError) {
+          this.errorMessage = categoryError;
           this.isSubmitting = false;
           return;
         }
@@ -280,65 +286,196 @@ export default {
 .clickable-label {
   cursor: pointer;
   user-select: none;
-  transition: color 0.15s ease;
-}
-.clickable-label:hover {
-  color: #0284c7 !important;
 }
 
 .word-form-languages {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 .word-form-languages > .field {
   min-width: 0;
   margin: 0 !important;
 }
+.word-form-languages .ui.labeled.input {
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+.word-form-languages .ui.labeled.input > .ui.label {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-weight: 500;
+  padding: 0.6rem 0.8rem !important;
+}
+.word-form-languages .ui.labeled.input > input {
+  border: none !important;
+  background: #ffffff;
+  padding: 0.6rem 0.8rem !important;
+  border-radius: 0 6px 6px 0 !important;
+  font-weight: 400;
+  transition: border-color 0.15s ease !important;
+}
+.word-form-languages .ui.labeled.input > input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
 .word-form-category-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: center;
 }
+.word-form-category-row select {
+  border-radius: 4px !important;
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  padding: 0.6rem 0.8rem !important;
+  transition: border-color 0.15s ease !important;
+}
+.word-form-category-row select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
 .word-form-category-button {
   margin: 0 !important;
   white-space: nowrap;
+  border-radius: 4px !important;
+  padding: 0.6rem 1rem !important;
+  font-weight: 500 !important;
 }
+.word-form-category-button:hover {
+  background: #f8fafc;
+}
+
+/* ── Favourite: checkbox tự vẽ để alignment tuyệt đối ─────────────── */
 .word-form-favourite {
   margin-top: 1.25rem !important;
-  padding: 1rem;
-  border: 1px solid #e5e9f0;
-  border-radius: 8px;
-  background: #fafbfc;
+  padding: 1rem 1.15rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.word-form-favourite label {
-  display: flex !important;
+.favourite-label {
+  display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  color: #687386 !important;
+  gap: 0.3rem;
+  cursor: pointer;
 }
-.word-form-favourite label strong {
-  color: #30394a;
+.favourite-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
-.word-form-favourite label .icon {
-  color: #f2c037;
+/* Hàng đầu: ô tick + icon sao + title căn giữa tuyệt đối với nhau */
+.favourite-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
+.favourite-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.favourite-box .icon {
+  margin: 0 !important;
+  color: #ffffff;
+  font-size: 0.7rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.favourite-input:checked ~ .favourite-row .favourite-box {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+.favourite-input:checked ~ .favourite-row .favourite-box .icon {
+  opacity: 1;
+}
+.favourite-row strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.favourite-row strong .icon {
+  display: block;
+  margin: 0 !important;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+/* Mô tả lùi vào thẳng cột chữ, không nằm dưới ô tick */
+.favourite-desc {
+  padding-left: calc(18px + 0.55rem);
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+/* Chỉ sáng lên khi người dùng tick chọn favourite */
+.word-form-favourite.favourite-active {
+  border-color: #fde68a;
+  background: linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%);
+}
+.word-form-favourite.favourite-active .favourite-row strong {
+  color: #92400e;
+}
+.word-form-favourite.favourite-active .favourite-row strong .icon {
+  color: #f59e0b;
+}
+.word-form-favourite.favourite-active .favourite-desc {
+  color: #b45309;
+}
+
 .word-form-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.5rem;
-  padding-top: 1.25rem;
+  padding-top: 1rem;
   border-top: 1px solid #e5e9f0;
 }
 .word-form-actions .ui.button {
-  min-width: 150px;
+  min-width: 140px;
   margin: 0;
+  border-radius: 6px !important;
+  padding: 0.6rem 1.25rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
 }
+.word-form-actions .ui.button:hover {
+  background: #1e293b !important;
+}
+.word-form-actions .ui.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
+  .word-form-languages {
+    grid-template-columns: 1fr;
+  }
   .word-form-category-row {
     grid-template-columns: 1fr;
+  }
+  .word-form-actions {
+    justify-content: stretch;
+  }
+  .word-form-actions .ui.button {
+    width: 100%;
   }
 }
 </style>

@@ -696,8 +696,8 @@ export default {
 /* Badge màu thương hiệu của từng công nghệ */
 .stack-pill-img {
   flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .stack-pill-badge {
@@ -705,11 +705,11 @@ export default {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 5px;
   color: #ffffff;
-  font-size: 0.62rem;
+  font-size: 0.66rem;
   font-weight: 800;
 }
 
