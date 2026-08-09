@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 const Category = require('../models/categoryModel');
 const Word = require('../models/wordModel');
+const { validateCategoryName, exactMatch } = require('../helpers/validation');
+
+// Tìm danh mục trùng tên (không phân biệt hoa thường), có thể loại trừ 1 ID
+const findDuplicateCategory = (name, excludeId) => {
+  const query = { name: exactMatch(name) };
+  if (excludeId) query._id = { $ne: excludeId };
+  return Category.findOne(query);
+};
 
 // Lấy danh sách tất cả danh mục, sắp xếp theo tên từ A-Z
 exports.list_all_categories = async (req, res) => {
@@ -15,21 +23,12 @@ exports.list_all_categories = async (req, res) => {
 // Tạo danh mục mới sau khi kiểm tra đầy đủ (bảo vệ Postman & API)
 exports.create_a_category = async (req, res) => {
   try {
-    const rawName = req.body && req.body.name;
-    const name = typeof rawName === 'string' ? rawName.trim() : '';
-
-    if (!name) {
-      return res.status(400).json({ message: 'Category name is required.' });
-    }
-    if (name.length < 2) {
-      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
-    }
-    if (name.length > 40) {
-      return res.status(400).json({ message: 'Category name cannot exceed 40 characters.' });
+    const { name, error } = validateCategoryName(req.body && req.body.name);
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
-    const categories = await Category.find({});
-    const duplicate = categories.find(category => category.name.toLowerCase() === name.toLowerCase());
+    const duplicate = await findDuplicateCategory(name);
     if (duplicate) return res.status(400).json({ message: 'Category already exists.' });
 
     const saved = await Category.create({ name });
@@ -49,24 +48,12 @@ exports.update_a_category = async (req, res) => {
     const category = await Category.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found.' });
 
-    const rawName = req.body && req.body.name;
-    const newName = typeof rawName === 'string' ? rawName.trim() : '';
-
-    if (!newName) {
-      return res.status(400).json({ message: 'Category name is required.' });
-    }
-    if (newName.length < 2) {
-      return res.status(400).json({ message: 'Category name must be at least 2 characters.' });
-    }
-    if (newName.length > 40) {
-      return res.status(400).json({ message: 'Category name cannot exceed 40 characters.' });
+    const { name: newName, error } = validateCategoryName(req.body && req.body.name);
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
-    const categories = await Category.find({});
-    const duplicate = categories.find(c =>
-      c._id.toString() !== req.params.categoryId &&
-      c.name.toLowerCase() === newName.toLowerCase()
-    );
+    const duplicate = await findDuplicateCategory(newName, category._id);
     if (duplicate) return res.status(400).json({ message: 'Category already exists.' });
 
     category.name = newName;

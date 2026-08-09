@@ -9,26 +9,35 @@
       <div class="workspace-header-actions">
         <router-link to="/test" class="ui primary button">
           <i class="play icon"></i>
-          Practice now
+          Practice Now
         </router-link>
       </div>
     </header>
 
-    <!-- Stat row -->
+    <!-- Stat strip -->
     <div class="stat-row">
       <div class="stat-item">
+        <div class="stat-item-head">
+          <i class="book icon stat-icon-blue"></i>
+          <span class="stat-label">Total Words</span>
+        </div>
         <span class="stat-value">{{ totalWords }}</span>
-        <span class="stat-label">Total words</span>
       </div>
-      <div class="stat-divider"></div>
+
       <div class="stat-item">
+        <div class="stat-item-head">
+          <i class="star icon stat-icon-amber"></i>
+          <span class="stat-label">Favourites</span>
+        </div>
         <span class="stat-value">{{ favouriteCount }}</span>
-        <span class="stat-label">Favourites</span>
       </div>
-      <div class="stat-divider"></div>
+
       <div class="stat-item">
+        <div class="stat-item-head">
+          <i class="tags icon stat-icon-green"></i>
+          <span class="stat-label">Categories</span>
+        </div>
         <span class="stat-value">{{ categoryCount }}</span>
-        <span class="stat-label">Categories</span>
       </div>
     </div>
 
@@ -51,7 +60,11 @@
       </div>
 
       <div v-if="quizHistory.length === 0" class="history-empty">
-        No quiz attempts yet. <router-link to="/test">Take your first quiz.</router-link>
+        <span class="history-empty-icon"><i class="trophy icon"></i></span>
+        <p>No quiz attempts yet.</p>
+        <router-link to="/test" class="ui primary button icon labeled">
+          <i class="play icon"></i> Take Your First Quiz
+        </router-link>
       </div>
 
       <table v-else class="ui very basic compact table history-table">
@@ -92,7 +105,7 @@
 <script>
 // ── Trang Dashboard ──────────────────────────────────────────────────
 // Hiển thị tổng quan: số từ, favourites, categories, lịch sử quiz gần đây
-import { getWords, getCategories } from '../helpers/helpers';
+import { getWords, getCategories, QUIZ_HISTORY_KEY } from '../helpers/helpers';
 
 export default {
   name: 'dashboard',
@@ -126,7 +139,7 @@ export default {
       this.favouriteCount = words.filter(word => word.favourite).length;
       this.categoryCount = categories.length;
       try {
-        this.quizHistory = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
+        this.quizHistory = JSON.parse(localStorage.getItem(QUIZ_HISTORY_KEY) || '[]');
       } catch (error) { this.quizHistory = []; }
     } catch (error) {
       this.flash('Failed to load dashboard data.', 'error');
@@ -166,67 +179,148 @@ export default {
 </script>
 
 <style scoped>
-/* Stat row */
+/* Stat strip — một panel phẳng, 3 ô ngăn cách bằng kẻ mờ */
 .stat-row {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1.5rem;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
-  margin-bottom: 1.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
+
 .stat-item {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 1.35rem 1.6rem;
+  gap: 0.55rem;
+  padding: 1.25rem 1.5rem;
 }
-.stat-divider {
-  width: 1px;
-  background: #e2e8f0;
-  flex: 0 0 1px;
+
+.stat-item + .stat-item {
+  border-left: 1px solid #f1f5f9;
 }
-.stat-value {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #0f172a;
+
+.stat-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.stat-item-head .icon {
+  display: block;
+  margin: 0 !important;
+  font-size: 0.85rem;
   line-height: 1;
-  letter-spacing: -0.03em;
 }
+
+.stat-icon-blue { color: #2563eb; }
+.stat-icon-amber { color: #d97706; }
+.stat-icon-green { color: #059669; }
+
+.stat-value {
+  color: #0f172a;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
 .stat-label {
-  font-size: 0.75rem;
   color: #64748b;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* History table */
 .history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.25rem 1rem;
+  background: #f8fafc;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
   color: #64748b;
-  font-size: 0.88rem;
-  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  text-align: center;
+}
+.history-empty p {
+  margin: 0 0 0.4rem;
+}
+.history-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fffbeb;
+  color: #d97706;
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+.history-empty-icon .icon {
+  display: block;
+  margin: 0 !important;
+  line-height: 1;
 }
 .history-table thead th {
   color: #64748b !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
-  padding-bottom: 0.7rem !important;
+  padding-bottom: 0.75rem !important;
   border-bottom: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
 }
 .history-table tbody td {
   vertical-align: middle !important;
-  color: #1e293b;
-  font-size: 0.88rem;
+  color: #334155;
+  font-size: 0.875rem;
+  padding: 0.75rem 0.5rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+.history-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+.history-table tbody tr:last-child td {
+  border-bottom: none !important;
 }
 .muted { color: #94a3b8; }
-.score-good { color: #16a34a; font-weight: 700; }
-.score-mid  { color: #ea580c; font-weight: 700; }
-.score-low  { color: #dc2626; font-weight: 700; }
+
+@media (max-width: 767px) {
+  .stat-row {
+    grid-template-columns: 1fr;
+  }
+}
+.score-good { 
+  color: #16a34a; 
+  font-weight: 600; 
+  background: #f0fdf4;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+.score-mid  { 
+  color: #ea580c; 
+  font-weight: 600; 
+  background: #fff7ed;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+.score-low  { 
+  color: #dc2626; 
+  font-weight: 600; 
+  background: #fef2f2;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
 </style>

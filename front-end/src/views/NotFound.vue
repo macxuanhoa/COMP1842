@@ -1,13 +1,17 @@
 <template>
   <div class="workspace-page not-found-page">
-    <section class="ui segment workspace-panel not-found-panel">
-      <span class="not-found-icon">
-        <i class="compass outline icon"></i>
-      </span>
-      <span class="not-found-code">404</span>
-      <h1>Page not found</h1>
-      <p>The page you are looking for does not exist or may have been moved.</p>
-      <div class="not-found-actions">
+    <section class="nf-card">
+      <span class="nf-eyebrow">Error 404</span>
+
+      <h1 class="nf-code">404</h1>
+
+      <h2 class="nf-title">Page not found</h2>
+      <p class="nf-copy">
+        The page you are looking for doesn't exist, has been moved, or the address was typed
+        incorrectly. Your vocabulary is safe — let's get you back on track.
+      </p>
+
+      <div class="nf-actions">
         <router-link to="/dashboard" class="ui primary button icon labeled">
           <i class="home icon"></i> Return to Dashboard
         </router-link>
@@ -29,60 +33,82 @@ export default {
 </script>
 
 <style scoped>
-.not-found-panel {
+.not-found-page {
+  display: flex;
+  justify-content: center;
   padding-top: 3rem !important;
-  padding-bottom: 3rem !important;
+  padding-bottom: 3rem;
+}
+
+.nf-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 3rem 2.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
   text-align: center;
 }
 
-.not-found-icon {
-  display: inline-flex;
-  width: 58px;
-  height: 58px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 17px;
-  color: #2185d0;
-  background: #eaf5fc;
-  font-size: 1.45rem;
-}
-
-.not-found-icon .icon {
-  margin: 0 !important;
-}
-
-.not-found-code {
-  display: block;
-  margin-top: 1.25rem;
-  color: #2185d0;
-  font-size: 0.78rem;
-  font-weight: 800;
+.nf-eyebrow {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  background: #f1f5f9;
+  border-radius: 999px;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.not-found-panel h1 {
-  margin: 0.45rem 0 0.6rem;
-  color: #172033;
-  font-size: 2rem;
+.nf-code {
+  margin: 1.1rem 0 0.4rem;
+  background: linear-gradient(180deg, #0f172a 35%, #64748b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 4.5rem;
+  font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-.not-found-panel p {
-  max-width: 420px;
+.nf-title {
+  margin: 0 0 0.5rem;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.nf-copy {
   margin: 0 auto;
-  color: #687386;
-  font-size: 1rem;
+  max-width: 360px;
+  color: #64748b;
+  font-size: 0.875rem;
   line-height: 1.6;
 }
 
-.not-found-actions {
+.nf-actions {
   display: flex;
   justify-content: center;
-  gap: 0.65rem;
-  margin-top: 1.5rem;
+  gap: 0.6rem;
+  margin-top: 1.75rem;
 }
 
-.not-found-actions .ui.button {
+.nf-actions .ui.button {
   margin: 0;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+@media (max-width: 480px) {
+  .nf-card {
+    padding: 2.25rem 1.5rem;
+  }
+  .nf-actions {
+    flex-direction: column;
+  }
 }
 </style>

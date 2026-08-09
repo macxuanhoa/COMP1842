@@ -37,6 +37,7 @@
               type="text"
               placeholder="Enter new category name (e.g. Travel, Business, Food)..."
               v-model.trim="newCategoryName"
+              @input="errorMessage = ''"
             />
             <button class="ui primary button" type="submit">
               Add Category
@@ -59,17 +60,36 @@
       </div>
 
       <div>
-        <div v-if="visibleCategories.length === 0" class="category-empty-state">
+        <!-- Ô tìm kiếm category theo tên -->
+        <div class="category-search">
+          <div class="ui icon input fluid category-search-input">
+            <input
+              type="text"
+              placeholder="Search categories by name..."
+              v-model="searchText"
+            />
+            <i
+              v-if="searchText"
+              class="times icon category-search-clear"
+              title="Clear search"
+              @click="clearCategorySearch"
+            ></i>
+            <i v-else class="search icon"></i>
+          </div>
+        </div>
+
+        <div v-if="visibleItems.length === 0" class="category-empty-state">
           <div class="category-empty-icon">
             <i class="tags icon"></i>
           </div>
           <div class="category-empty-text">
-            No saved categories are available yet.
+            {{ searchText ? 'No categories match your search.' : 'No saved categories are available yet.' }}
           </div>
           <button
+            v-if="!searchText"
             type="button"
             class="ui positive button category-empty-button"
-            @click="focusNewCategoryInput"
+            @click="focusField('newCategoryInput')"
           >
             Add Category
           </button>
@@ -85,14 +105,18 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="category in visibleCategories" :key="category._id">
+              <template v-for="category in visibleItems">
+                <tr :key="category._id" :class="{ 'category-row-expanded': expandedCategoryId === category._id }">
                 <!-- Cột tên -->
                 <td>
                   <div v-if="editingCategoryId === category._id" class="ui input fluid">
                     <input
                       type="text"
+                      ref="editingCategoryInput"
                       v-model.trim="editingCategoryName"
                       placeholder="Enter category name..."
+                      @keyup.enter="saveCategoryEdit(category._id)"
+                      @keyup.esc="cancelCategoryEdit"
                     />
                   </div>
                   <div v-else class="category-name-cell">
@@ -104,7 +128,7 @@
                 <td class="center aligned">
                   <span class="ui label mini basic category-count">
                     <i class="layer group icon"></i>
-                    {{ getWordsUsingCategory(category._id) }} {{ getWordsUsingCategory(category._id) === 1 ? 'word' : 'words' }}
+                    {{ getWordsInCategory(category._id).length }} {{ getWordsInCategory(category._id).length === 1 ? 'word' : 'words' }}
                   </span>
                 </td>
 
@@ -135,8 +159,9 @@
                     <button
                       type="button"
                       class="ui icon mini basic button"
-                      title="View words in this category"
-                      @click="viewCategoryWords(category._id)"
+                      :class="{ active: expandedCategoryId === category._id }"
+                      :title="expandedCategoryId === category._id ? 'Hide words in this category' : 'View words in this category'"
+                      @click="toggleCategoryWords(category._id)"
                     >
                       <i class="eye icon"></i>
                     </button>
@@ -161,6 +186,31 @@
                   </div>
                 </td>
               </tr>
+
+                <!-- Hàng mở rộng: danh sách từ vựng của category tại chỗ -->
+                <tr v-if="expandedCategoryId === category._id" :key="category._id + '-words'" class="category-words-row">
+                  <td colspan="3">
+                    <div class="category-words-inline">
+                      <div class="category-words-inline-title">
+                        <i class="book open icon"></i>
+                        Words in “{{ category.name }}”
+                        <span class="category-words-count">{{ getWordsInCategory(category._id).length }}</span>
+                      </div>
+                      <div v-if="getWordsInCategory(category._id).length === 0" class="category-words-empty">
+                        No words in this category yet.
+                      </div>
+                      <div v-else class="category-words-list">
+                        <div v-for="word in getWordsInCategory(category._id)" :key="word._id" class="category-word-item">
+                          <i :class="[word.favourite ? 'star icon yellow' : 'star outline icon grey']" class="category-word-star"></i>
+                          <span class="category-word-lang"><strong>EN</strong> {{ word.english }}</span>
+                          <span class="category-word-lang"><strong>DE</strong> {{ word.german }}</span>
+                          <span class="category-word-lang"><strong>FR</strong> {{ word.french }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -226,80 +276,70 @@ import {
   getCategories,
   createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  validateCategoryName
 } from '../helpers/helpers';
+import { paginationMixin, focusFieldMixin } from '../helpers/mixins';
 import ConfirmModal from '../components/ConfirmModal.vue';
 
 export default {
   name: 'categories',
   components: { ConfirmModal },
+  mixins: [paginationMixin, focusFieldMixin],
   data() {
     return {
       categories: [],          // danh sách tất cả category
       words: [],               // danh sách tất cả words (để đếm số từ/category)
       newCategoryName: '',     // tên category mới trong ô input
+      searchText: '',          // từ khóa tìm kiếm category theo tên
       editingCategoryId: '',   // ID category đang được chỉnh sửa inline
       editingCategoryName: '', // tên mới khi đang sửa inline
       errorMessage: '',        // Thông báo lỗi validate thủ công
-      currentPage: 1,          // trang hiện tại
-      pageSize: 8,             // số category mỗi trang
+      expandedCategoryId: '',  // ID category đang mở rộng xem từ vựng tại chỗ
       isConfirmOpen: false,    // Cờ bật/tắt modal xóa
       categoryToDelete: null   // Category chuẩn bị xóa
     };
   },
+  watch: {
+    // Thay đổi từ khóa tìm kiếm → quay về trang 1
+    searchText: 'resetPage'
+  },
   computed: {
-    totalPages() {
-      return Math.ceil(this.categories.length / this.pageSize) || 1;
-    },
-    visibleCategories() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      return this.categories.slice(start, start + this.pageSize);
-    },
-    paginationSummary() {
-      const total = this.categories.length;
-      if (total === 0) return '0 categories';
-      const start = (this.currentPage - 1) * this.pageSize + 1;
-      const end = Math.min(start + this.pageSize - 1, total);
-      return `Showing ${start}–${end} of ${total} categories`;
-    },
     deleteMessage() {
       if (!this.categoryToDelete) return '';
       return `Are you sure you want to delete "${this.categoryToDelete.name}"? This action cannot be undone.`;
-    }
-  },
-  watch: {
-    categories() {
-      if (this.currentPage > this.totalPages) {
-        this.currentPage = this.totalPages;
-      }
+    },
+    // Lọc category theo từ khóa tìm kiếm (không phân biệt hoa thường)
+    filteredCategories() {
+      const query = this.searchText.trim().toLowerCase();
+      if (!query) return this.categories;
+      return this.categories.filter(category =>
+        category.name.toLowerCase().includes(query)
+      );
+    },
+    // Nguồn dữ liệu & nhãn cho paginationMixin (logic phân trang dùng chung)
+    paginationItems() {
+      return this.filteredCategories;
+    },
+    paginationLabel() {
+      return 'categories';
     }
   },
   mounted() {
     this.loadPageData();
   },
   methods: {
-    focusNewCategoryInput() {
-      if (this.$refs.newCategoryInput) {
-        this.$refs.newCategoryInput.focus();
-      }
+    clearCategorySearch() {
+      this.searchText = '';
     },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-      }
-    },
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
-    },
-    goToPage(page) {
-      this.currentPage = page;
-    },
-    getWordsUsingCategory(categoryId) {
+    getWordsInCategory(categoryId) {
       return this.words.filter(
         word => word.category && word.category._id === categoryId
-      ).length; 
+      );
+    },
+    // Mở/đóng danh sách từ vựng của category ngay tại chỗ (không reload, dùng dữ liệu đã tải)
+    toggleCategoryWords(categoryId) {
+      this.expandedCategoryId = this.expandedCategoryId === categoryId ? '' : categoryId;
     },
     async loadPageData() {
       try {
@@ -311,26 +351,14 @@ export default {
       }
     },
 
-    // View words filtered by this category (Task 7)
-    viewCategoryWords(categoryId) {
-      this.$router.push({ name: 'words', query: { category: categoryId } });
-    },
-
     // ── CRUD Category ────────────────────────────────────────────────
     async createNewCategory() {
       const name = this.newCategoryName.trim();
-      
-      // Manual Validation (Task 6)
-      if (!name) {
-        this.errorMessage = 'Category name is required.';
-        return;
-      }
-      if (name.length < 2) {
-        this.errorMessage = 'Category name must be at least 2 characters.';
-        return;
-      }
-      if (name.length > 40) {
-        this.errorMessage = 'Category name cannot exceed 40 characters.';
+
+      // Validate dùng chung (đồng bộ rule với backend)
+      const error = validateCategoryName(name);
+      if (error) {
+        this.errorMessage = error;
         return;
       }
 
@@ -342,7 +370,7 @@ export default {
         this.newCategoryName = '';
         await this.loadPageData();
 
-        const categoryIndex = this.categories.findIndex(
+        const categoryIndex = this.filteredCategories.findIndex(
           category => category.name.toLowerCase() === name.toLowerCase()
         );
         if (categoryIndex !== -1) {
@@ -356,6 +384,12 @@ export default {
     startCategoryEdit(category) {
       this.editingCategoryId = category._id;
       this.editingCategoryName = category.name;
+      // Tự focus vào ô nhập khi bắt đầu sửa (ref trong v-for trả về mảng)
+      this.$nextTick(() => {
+        const ref = this.$refs.editingCategoryInput;
+        const input = Array.isArray(ref) ? ref[0] : ref;
+        if (input) input.focus();
+      });
     },
 
     cancelCategoryEdit() {
@@ -365,8 +399,8 @@ export default {
 
     async saveCategoryEdit(categoryId) {
       const name = this.editingCategoryName.trim();
-      if (!name) return this.flash('Category name is required.', 'error');
-      if (name.length < 2) return this.flash('Category name must be at least 2 characters.', 'error');
+      const error = validateCategoryName(name);
+      if (error) return this.flash(error, 'error');
 
       try {
         await updateCategory({ _id: categoryId, name });
@@ -380,7 +414,7 @@ export default {
 
     // ── Xóa category với ConfirmModal ─────────────────────────────
     triggerDeleteCategory(category) {
-      const wordsCount = this.getWordsUsingCategory(category._id);
+      const wordsCount = this.getWordsInCategory(category._id).length;
       if (wordsCount > 0) {
         return this.flash('Cannot delete a category with linked words.', 'error');
       }
@@ -416,61 +450,197 @@ export default {
   padding-bottom: 2rem;
 }
 
+/* Ô tìm kiếm category */
+.category-search {
+  max-width: 340px;
+  margin-bottom: 1rem;
+}
+.category-search-input input {
+  padding: 0.6rem 2.4rem 0.6rem 0.9rem !important;
+  border-color: #cbd5e1 !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem;
+}
+.category-search-input > i.icon {
+  color: #94a3b8;
+}
+.category-search-clear {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  transition: color 0.15s ease;
+}
+.category-search-clear:hover {
+  color: #ef4444 !important;
+}
+
+/* Hàng mở rộng: từ vựng của category tại chỗ */
+.category-row-expanded > td {
+  background: #f8fafc !important;
+}
+.category-words-row > td {
+  padding: 0.9rem 1rem !important;
+  background: #f8fafc !important;
+}
+.category-words-inline-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.6rem;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.category-words-inline-title .icon {
+  display: block;
+  margin: 0 !important;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.category-words-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 0.4rem;
+  background: #e2e8f0;
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.category-words-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-width: 900px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+.category-words-list::-webkit-scrollbar {
+  width: 6px;
+}
+.category-words-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.category-word-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.5rem 0.85rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 0.82rem;
+}
+.category-word-star {
+  display: block;
+  margin: 0 !important;
+  line-height: 1;
+}
+.category-word-lang {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-word-lang strong {
+  margin-right: 0.45rem;
+  color: #94a3b8;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.category-words-empty {
+  padding: 0.25rem 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+.library-row-actions .ui.button.active {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
 .category-create-panel {
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 1.25rem !important;
 }
 
 .category-create-control {
   display: flex !important;
   width: 100% !important;
+  border-radius: 6px !important;
+  overflow: hidden;
 }
 .category-create-control input {
   flex: 1 1 auto !important;
   width: 100% !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
+  border-radius: 6px 0 0 6px !important;
 }
 .category-create-control .ui.button {
   flex: 0 0 auto !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
+  border-radius: 0 6px 6px 0 !important;
   margin: 0 !important;
 }
 
 .category-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .category-table {
   width: 100%;
   margin: 0 !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
 }
 
 .category-table th {
-  padding-top: 0.85rem !important;
-  padding-bottom: 0.85rem !important;
-  color: #0f172a !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  color: #64748b !important;
   background: #f8fafc !important;
-  font-size: 0.76rem !important;
-  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
-  border-bottom: 1px solid #cbd5e1 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
 .category-table td {
   padding-top: 0.75rem !important;
   padding-bottom: 0.75rem !important;
   vertical-align: middle !important;
-  color: #1e293b;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 0.875rem;
+}
+
+.category-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+.category-table tbody tr:last-child td {
+  border-bottom: none !important;
 }
 
 .category-name-cell {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
 
 .category-name-cell strong {
@@ -478,6 +648,8 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+  color: #0f172a;
 }
 
 .category-count {
@@ -486,52 +658,62 @@ export default {
   gap: 0.3rem !important;
   background: #f1f5f9 !important;
   color: #334155 !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 6px !important;
-  padding: 0.3em 0.65em !important;
-  font-weight: 600 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  padding: 0.25em 0.6em !important;
+  font-weight: 500 !important;
 }
 
 .library-row-actions {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.25rem;
   justify-content: center;
 }
 .library-row-actions .ui.button {
   margin: 0;
-  padding: 0.55rem 0.6rem !important;
+  padding: 0.4rem 0.5rem !important;
+  border-radius: 4px !important;
 }
 
 .category-empty-state {
-  padding: 3rem 1.75rem;
-  border: 1px dashed #d9dee7;
-  border-radius: 12px;
-  color: #687386;
-  background: #fafbfc;
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  color: #64748b;
+  background: #f8fafc;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
+
 .category-empty-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9aa3b8;
+  color: #9ca3af;
 }
+
 .category-empty-icon .icon {
   margin: 0 !important;
-  font-size: 2.75rem;
+  font-size: 2rem;
   line-height: 1;
 }
 .category-empty-text {
   font-size: 0.9rem;
   color: #64748b;
+  font-weight: 500;
 }
 
-/* Swiss Editorial Pagination */
+.category-empty-button {
+  padding: 0.6rem 1.25rem !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem;
+}
+
+/* Pagination */
 .category-pagination {
   display: flex;
   align-items: center;
@@ -544,34 +726,34 @@ export default {
 
 .pagination-summary {
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .pagination-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   padding: 0.4rem 0.75rem;
   background: #ffffff;
   color: #0f172a;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 .pagination-btn:hover:not(:disabled) {
   background: #f8fafc;
-  border-color: #0284c7;
-  color: #0284c7;
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 .pagination-btn:disabled {
   opacity: 0.4;
@@ -588,9 +770,9 @@ export default {
   background: #ffffff;
   color: #334155;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -602,6 +784,6 @@ export default {
   background: #0f172a;
   color: #ffffff;
   border-color: #0f172a;
-  font-weight: 700;
+  font-weight: 600;
 }
 </style>

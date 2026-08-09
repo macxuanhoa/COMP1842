@@ -487,26 +487,47 @@ export default {
 }
 
 .modal-title .icon {
+  display: block;
   margin: 0 !important;
+  line-height: 1;
   color: #0284c7;
 }
 
 .close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
   color: #64748b;
   font-size: 1.1rem;
   cursor: pointer;
+  transition: color 0.15s ease;
 }
 .close-btn:hover { color: #0f172a; }
+.close-btn .icon {
+  display: block;
+  margin: 0 !important;
+  line-height: 1;
+}
 
 .tab-menu {
   margin-bottom: 1.25rem !important;
 }
 
 .tab-menu .item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   cursor: pointer !important;
   font-weight: 600 !important;
+}
+
+.tab-menu .item .icon {
+  display: block;
+  margin: 0 !important;
+  line-height: 1;
 }
 
 .scope-options {
@@ -575,6 +596,12 @@ export default {
 }
 
 .format-btn input { display: none; }
+
+.format-btn .icon {
+  display: block;
+  margin: 0 !important;
+  line-height: 1;
+}
 
 .modal-footer {
   display: flex;

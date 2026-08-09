@@ -1,6 +1,28 @@
 const mongoose = require('mongoose');
 const Word = require('../models/wordModel');
 const Category = require('../models/categoryModel');
+const { normalizeText, exactMatch, validateLanguageFields } = require('../helpers/validation');
+
+// Kiểm tra category ID hợp lệ và tồn tại (dùng chung cho create & update)
+const validateCategoryRef = async (category) => {
+  if (!category || !mongoose.Types.ObjectId.isValid(category)) {
+    return 'Invalid or missing category ID.';
+  }
+  const categoryExists = await Category.findById(category);
+  if (!categoryExists) return 'Selected category does not exist.';
+  return null;
+};
+
+// Tìm từ vựng trùng cả 3 ngôn ngữ (không phân biệt hoa thường), có thể loại trừ 1 ID
+const findDuplicateWord = ({ german, english, french }, excludeId) => {
+  const query = {
+    german: exactMatch(german),
+    english: exactMatch(english),
+    french: exactMatch(french)
+  };
+  if (excludeId) query._id = { $ne: excludeId };
+  return Word.findOne(query);
+};
 
 // Lấy danh sách tất cả các từ vựng, bao gồm tên danh mục tương ứng và sắp xếp theo ngày tạo mới nhất
 exports.list_all_words = async (req, res) => {
@@ -17,32 +39,23 @@ exports.list_all_words = async (req, res) => {
 // Tạo một từ vựng mới với đầy đủ kiểm tra bảo mật API & Postman
 exports.create_a_word = async (req, res) => {
   try {
-    let { german, english, french, category, favourite } = req.body || {};
+    const { category, favourite } = req.body || {};
+    const german = normalizeText((req.body || {}).german);
+    const english = normalizeText((req.body || {}).english);
+    const french = normalizeText((req.body || {}).french);
 
-    german = typeof german === 'string' ? german.trim() : '';
-    english = typeof english === 'string' ? english.trim() : '';
-    french = typeof french === 'string' ? french.trim() : '';
-
-    if (!german || !english || !french) {
-      return res.status(400).json({ message: 'Please fill in all required language fields.' });
+    const languageError = validateLanguageFields({ german, english, french });
+    if (languageError) {
+      return res.status(400).json({ message: languageError });
     }
 
-    if (!category || !mongoose.Types.ObjectId.isValid(category)) {
-      return res.status(400).json({ message: 'Invalid or missing category ID.' });
-    }
-
-    const categoryExists = await Category.findById(category);
-    if (!categoryExists) {
-      return res.status(400).json({ message: 'Selected category does not exist.' });
+    const categoryError = await validateCategoryRef(category);
+    if (categoryError) {
+      return res.status(400).json({ message: categoryError });
     }
 
     // Kiểm tra trùng từ vựng (không phân biệt hoa thường)
-    const existingWord = await Word.findOne({
-      german: new RegExp(`^${german}$`, 'i'),
-      english: new RegExp(`^${english}$`, 'i'),
-      french: new RegExp(`^${french}$`, 'i')
-    });
-
+    const existingWord = await findDuplicateWord({ german, english, french });
     if (existingWord) {
       return res.status(400).json({ message: 'This word already exists.' });
     }
@@ -88,34 +101,26 @@ exports.update_a_word = async (req, res) => {
     if (!word) return res.status(404).json({ message: 'Word not found.' });
 
     if (req.body.category !== undefined) {
-      if (!mongoose.Types.ObjectId.isValid(req.body.category)) {
-        return res.status(400).json({ message: 'Invalid category ID format.' });
-      }
-      const categoryExists = await Category.findById(req.body.category);
-      if (!categoryExists) {
-        return res.status(400).json({ message: 'Selected category does not exist.' });
+      const categoryError = await validateCategoryRef(req.body.category);
+      if (categoryError) {
+        return res.status(400).json({ message: categoryError });
       }
       word.category = req.body.category;
     }
 
-    if (req.body.german !== undefined) word.german = String(req.body.german).trim();
-    if (req.body.english !== undefined) word.english = String(req.body.english).trim();
-    if (req.body.french !== undefined) word.french = String(req.body.french).trim();
+    if (req.body.german !== undefined) word.german = normalizeText(req.body.german);
+    if (req.body.english !== undefined) word.english = normalizeText(req.body.english);
+    if (req.body.french !== undefined) word.french = normalizeText(req.body.french);
     if (req.body.favourite !== undefined) word.favourite = Boolean(req.body.favourite);
 
-    // Kiểm tra dữ liệu rỗng nếu có sửa ngôn ngữ
-    if (!word.german || !word.english || !word.french) {
-      return res.status(400).json({ message: 'Language fields cannot be empty.' });
+    // Kiểm tra dữ liệu rỗng / quá dài nếu có sửa ngôn ngữ
+    const languageError = validateLanguageFields(word);
+    if (languageError) {
+      return res.status(400).json({ message: languageError });
     }
 
     // Kiểm tra trùng từ với từ vựng khác
-    const duplicate = await Word.findOne({
-      _id: { $ne: word._id },
-      german: new RegExp(`^${word.german}$`, 'i'),
-      english: new RegExp(`^${word.english}$`, 'i'),
-      french: new RegExp(`^${word.french}$`, 'i')
-    });
-
+    const duplicate = await findDuplicateWord(word, word._id);
     if (duplicate) {
       return res.status(400).json({ message: 'This word already exists.' });
     }

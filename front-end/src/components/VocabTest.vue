@@ -52,14 +52,8 @@
               autocomplete="off"
               ref="answerInput"
               :disabled="isWaitingNext"
-              @input="errorMessage = ''"
             />
           </div>
-        </div>
-
-        <div v-if="errorMessage" class="ui negative message quiz-feedback">
-          <i class="exclamation triangle icon"></i>
-          <span>{{ errorMessage }}</span>
         </div>
 
         <div v-if="feedback" class="ui message quiz-feedback" :class="feedbackClass">
@@ -74,6 +68,7 @@
           v-if="!isWaitingNext"
           class="ui primary fluid button icon labeled"
           type="submit"
+          :disabled="!userAnswer.trim()"
         >
           <i class="check icon"></i>
           Submit Answer
@@ -102,7 +97,7 @@
         </div>
 
         <div v-if="wrongAnswers.length > 0" class="quiz-review">
-          <h4><i class="attention icon"></i> Needs review</h4>
+          <h4><i class="attention icon"></i> Needs Review</h4>
           <div class="quiz-review-table">
             <table class="ui celled compact table">
               <thead>
@@ -146,6 +141,8 @@
 <script>
 // ── Component quiz từ vựng ───────────────────────────────────────────
 // Nhận danh sách words và 2 ngôn ngữ (hỏi/đáp), tổ chức quiz và chấm điểm
+import { QUIZ_HISTORY_KEY, LANGUAGE_DETAILS } from '../helpers/helpers';
+
 export default {
   // Tên của component
   name: 'vocab-test',
@@ -168,12 +165,8 @@ export default {
       feedback: null,       // Trạng thái phản hồi câu làm: 'correct' (đúng), 'wrong' (sai), hoặc null (chưa trả lời)
       lastCorrectAnswer: '',// Lưu đáp án đúng của câu vừa làm để hiển thị khi người dùng làm sai
       isWaitingNext: false, // Cờ kiểm soát giao diện: true = đang hiện phản hồi & chờ bấm "Next Question"
-      errorMessage: '',     // Thông báo lỗi validate khi nộp đáp án trống
-      languageDetails: {    // Metadata hỗ trợ hiển thị tên, mã quốc gia và class icon cờ cho các ngôn ngữ
-        german:  { name: 'German',  code: 'DE', flag: 'germany flag' },
-        english: { name: 'English', code: 'EN', flag: 'united kingdom flag' },
-        french:  { name: 'French',  code: 'FR', flag: 'france flag' }
-      }
+      // Metadata hiển thị tên, mã quốc gia và class icon cờ (dùng chung từ helpers.js)
+      languageDetails: LANGUAGE_DETAILS
     };
   },
   computed: {
@@ -222,11 +215,8 @@ export default {
 
     // Xử lý nộp câu trả lời: So sánh đáp án nhập vào với đáp án chuẩn (bỏ khoảng trắng thừa & không phân biệt hoa/thường)
     submitAnswer() {
-      if (!this.userAnswer.trim()) {
-        this.errorMessage = 'Please enter your translation before submitting.';
-        return;
-      }
-      this.errorMessage = '';
+      // Nút Submit đã disabled khi ô đáp án trống nên không bao giờ bật lỗi bất ngờ
+      if (!this.userAnswer.trim()) return;
 
       const correctValue = this.currentWord[this.answerLanguage].trim().toLowerCase();
       const userValue = this.userAnswer.trim().toLowerCase();
@@ -245,7 +235,7 @@ export default {
     // Lưu lịch sử bài test vào localStorage của trình duyệt (giữ tối đa 50 bản ghi gần nhất)
     saveResult() {
       const wrongWordIds = this.wrongAnswers.map(wrongAnswer => wrongAnswer.word._id);
-      const history = JSON.parse(localStorage.getItem('coursework03_quiz_history') || '[]');
+      const history = JSON.parse(localStorage.getItem(QUIZ_HISTORY_KEY) || '[]');
       history.unshift({
         score: this.score,
         total: this.totalQuestions,
@@ -256,13 +246,12 @@ export default {
       if (history.length > 50) {
         history.pop(); // Loại bỏ bản ghi cũ nhất nếu vượt quá 50 bài
       }
-      localStorage.setItem('coursework03_quiz_history', JSON.stringify(history));
+      localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(history));
     },
     // Chuyển sang câu hỏi tiếp theo: Xóa từ hiện tại khỏi danh sách chờ, hoặc kết thúc bài test nếu hết câu hỏi
     nextQuestion() {
       this.answeredCount += 1;
       this.feedback = null;
-      this.errorMessage = '';
       this.isWaitingNext = false;
       this.userAnswer = '';
       this.remainingWords.shift(); // Loại bỏ từ vừa hỏi khỏi mảng

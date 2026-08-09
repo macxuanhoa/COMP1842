@@ -47,15 +47,13 @@
             <input type="text" readonly :value="word.german" />
             <button
               type="button"
-              class="modern-speaker-btn"
+              class="speak-btn"
               :class="{ playing: activeAudioLang === 'de-DE' }"
               @click="speakWord(word.german, 'de-DE')"
               title="Listen German pronunciation"
             >
-              <div class="speaker-icon-wrapper">
-                <i class="volume up icon"></i>
-              </div>
-              <span>Listen</span>
+              <i class="volume up icon speak-btn-icon"></i>
+              <span class="speak-btn-text">{{ activeAudioLang === 'de-DE' ? 'Playing' : 'Listen' }}</span>
             </button>
           </div>
         </div>
@@ -69,15 +67,13 @@
             <input type="text" readonly :value="word.english" />
             <button
               type="button"
-              class="modern-speaker-btn"
+              class="speak-btn"
               :class="{ playing: activeAudioLang === 'en-US' }"
               @click="speakWord(word.english, 'en-US')"
               title="Listen English pronunciation"
             >
-              <div class="speaker-icon-wrapper">
-                <i class="volume up icon"></i>
-              </div>
-              <span>Listen</span>
+              <i class="volume up icon speak-btn-icon"></i>
+              <span class="speak-btn-text">{{ activeAudioLang === 'en-US' ? 'Playing' : 'Listen' }}</span>
             </button>
           </div>
         </div>
@@ -91,15 +87,13 @@
             <input type="text" readonly :value="word.french" />
             <button
               type="button"
-              class="modern-speaker-btn"
+              class="speak-btn"
               :class="{ playing: activeAudioLang === 'fr-FR' }"
               @click="speakWord(word.french, 'fr-FR')"
               title="Listen French pronunciation"
             >
-              <div class="speaker-icon-wrapper">
-                <i class="volume up icon"></i>
-              </div>
-              <span>Listen</span>
+              <i class="volume up icon speak-btn-icon"></i>
+              <span class="speak-btn-text">{{ activeAudioLang === 'fr-FR' ? 'Playing' : 'Listen' }}</span>
             </button>
           </div>
         </div>
@@ -115,6 +109,19 @@
           </button>
         </div>
       </div>
+    </section>
+
+    <!-- Hiển thị khi ID không hợp lệ hoặc từ vựng không tồn tại -->
+    <section v-else-if="loadFailed" class="ui segment workspace-panel word-load-error">
+      <div class="word-load-error-icon">
+        <i class="search minus icon"></i>
+      </div>
+      <h2>Word not found</h2>
+      <p>This vocabulary entry does not exist or the link is invalid.</p>
+      <router-link to="/words" class="ui primary button icon labeled">
+        <i class="arrow left icon"></i>
+        Back to Library
+      </router-link>
     </section>
 
     <!-- Custom Delete Confirmation Dialog -->
@@ -133,7 +140,7 @@
 <script>
 // ── Trang chi tiết từ vựng ───────────────────────────────────────────
 // Xem đầy đủ thông tin 1 word: 3 ngôn ngữ, category, favourite, phát âm
-import { getWord, updateWord, deleteWord } from '../helpers/helpers';
+import { getWord, updateWord, deleteWord, speakWord } from '../helpers/helpers';
 import ConfirmModal from '../components/ConfirmModal.vue';
 
 export default {
@@ -142,6 +149,7 @@ export default {
   data() {
     return {
       word: null,             // dữ liệu word load từ API
+      loadFailed: false,      // Cờ đánh dấu load word thất bại (ID sai/không tồn tại)
       activeAudioLang: null,  // Ngôn ngữ đang phát âm thanh
       isConfirmOpen: false    // Cờ hiển thị dialog xóa
     };
@@ -156,26 +164,19 @@ export default {
     try {
       this.word = await getWord(this.$route.params.id);
     } catch {
+      this.loadFailed = true;
       this.flash('Failed to load word details.', 'error');
     }
   },
   methods: {
-    // Phát âm thanh bằng Web Speech API của trình duyệt
+    // Phát âm thanh bằng Web Speech API (helper dùng chung trong helpers.js)
     speakWord(text, languageCode) {
-      if (!text || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      this.activeAudioLang = languageCode;
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = languageCode;
-      utterance.onend = () => {
-        this.activeAudioLang = null;
-      };
-      utterance.onerror = () => {
-        this.activeAudioLang = null;
-      };
-
-      window.speechSynthesis.speak(utterance);
+      const started = speakWord(text, languageCode, {
+        onEnd: () => {
+          this.activeAudioLang = null;
+        }
+      });
+      if (started) this.activeAudioLang = languageCode;
     },
     // ── Bật/tắt yêu thích ──────────────────────────────────────────
     async toggleFavourite() {
@@ -224,44 +225,48 @@ export default {
 <style scoped>
 .workspace-section-label {
   display: block;
-  color: #687386;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.3rem;
 }
 .word-detail-overview {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid #e5e9f0;
 }
 .word-detail-category {
   margin: 0 !important;
-  color: #30394a !important;
-  background: #f7f9fb !important;
+  color: #334155 !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
 }
 .word-detail-favourite {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 38px;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.85rem;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #e0e5ed;
-  border-radius: 8px;
-  color: #687386;
-  background: #fff;
+  border-radius: 6px;
+  color: #64748b;
+  background: #ffffff;
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.8rem;
+  font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+.word-detail-favourite:hover {
+  background: #f8fafc;
 }
 .word-detail-favourite .icon {
   display: inline-flex !important;
@@ -270,16 +275,16 @@ export default {
   align-items: center;
   justify-content: center;
   margin: 0 !important;
-  color: #a5adba;
+  color: #94a3b8;
   line-height: 1 !important;
 }
 .word-detail-favourite.active {
-  border-color: #f2d777;
-  color: #8a6d00;
+  border-color: #fcd34d;
+  color: #92400e;
   background: #fffbeb;
 }
 .word-detail-favourite.active .icon {
-  color: #f2c037;
+  color: #f59e0b;
 }
 .word-detail-languages {
   display: grid;
@@ -292,91 +297,116 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  font-weight: 500;
+  color: #475569;
 }
 .word-detail-languages input[readonly] {
   color: #0f172a !important;
   background: #ffffff !important;
-  font-weight: 600;
+  border-color: #cbd5e1 !important;
+  font-weight: 500;
+  border-radius: 4px !important;
+  padding: 0.6rem 0.8rem !important;
+  transition: border-color 0.15s ease !important;
+}
+.word-detail-languages input[readonly]:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
 }
 
-/* Modern Speaker Button */
-.modern-speaker-btn {
+/* Speaker Button — tối giản, phẳng */
+.speak-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  padding: 0.6rem 1.1rem;
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: #ffffff;
-  border: none;
-  border-top-right-radius: 7px;
-  border-bottom-right-radius: 7px;
-  font-size: 0.86rem;
+  min-width: 104px;
+  padding: 0.55rem 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0 6px 6px 0;
+  color: #334155;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
-.modern-speaker-btn:hover {
-  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-  transform: translateY(-1px);
+.speak-btn:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+  background: #f8fafc;
 }
 
-.modern-speaker-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.2);
+.speak-btn:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 2px;
 }
 
-.speaker-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-}
-
-.speaker-icon-wrapper .icon {
+.speak-btn-icon {
   margin: 0 !important;
-  font-size: 0.8rem !important;
-  color: #ffffff !important;
+  font-size: 0.9rem !important;
+  line-height: 1 !important;
 }
 
-.modern-speaker-btn.playing {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  animation: pulseAudio 1.2s infinite ease-in-out;
-}
-
-@keyframes pulseAudio {
-  0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
+.speak-btn.playing {
+  color: #059669;
+  border-color: #6ee7b7;
+  background: #ecfdf5;
 }
 
 .word-detail-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.75rem;
   margin-top: 1.5rem;
-  padding-top: 1.25rem;
+  padding-top: 1rem;
   border-top: 1px solid #e5e9f0;
 }
 .word-detail-actions-primary {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
 .word-detail-actions .ui.button {
   margin: 0;
+  border-radius: 6px !important;
+}
+
+/* Panel lỗi khi không tìm thấy từ vựng */
+.word-load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1.5rem !important;
+  text-align: center;
+}
+.word-load-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  margin-bottom: 0.4rem;
+}
+.word-load-error-icon .icon {
+  margin: 0 !important;
+}
+.word-load-error h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.word-load-error p {
+  margin: 0 0 0.6rem;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 </style>

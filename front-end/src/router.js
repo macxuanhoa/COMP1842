@@ -25,6 +25,10 @@ export default new Router({
   mode: 'history', // Sử dụng chế độ HTML5 History Mode cho đường dẫn đẹp
   base: process.env.BASE_URL,
   linkActiveClass: 'active', // Thêm class 'active' cho menu link đang chọn
+  // Luôn cuộn về đầu trang khi đổi route để bố cục không bị nhảy
+  scrollBehavior() {
+    return { x: 0, y: 0 };
+  },
   routes: [
     // Trang chủ: chuyển hướng tự động về trang Dashboard
     {

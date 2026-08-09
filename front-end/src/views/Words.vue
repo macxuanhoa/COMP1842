@@ -19,7 +19,7 @@
         </button>
         <router-link to="/words/new" class="ui primary button">
           <i class="plus icon"></i>
-          Add new word
+          Add New Word
         </router-link>
       </div>
     </header>
@@ -39,7 +39,7 @@
             @click="resetFilters"
             title="Reset all filters"
           >
-            <i class="undo icon"></i> Reset filters
+            <i class="undo icon"></i> Reset Filters
           </button>
           <span class="workspace-panel-icon">
             <i class="filter icon"></i>
@@ -63,7 +63,7 @@
             />
             <i
               v-if="searchText"
-              class="times circle icon clear-search-icon"
+              class="times icon clear-search-icon"
               title="Clear search"
               @click="clearSearch"
             ></i>
@@ -116,8 +116,8 @@
           <h2>Vocabulary entries</h2>
 
           <p>
-            {{ visibleWords.length }}
-            {{ visibleWords.length === 1 ? 'word' : 'words' }} in this view
+            {{ visibleItems.length }}
+            {{ visibleItems.length === 1 ? 'word' : 'words' }} in this view
           </p>
         </div>
 
@@ -127,7 +127,7 @@
       </div>
 
       <div> <!-- // không có dữ liệu Read - gợi ý tạo mới-->
-        <div v-if="visibleWords.length === 0" class="library-empty-state">
+        <div v-if="visibleItems.length === 0" class="library-empty-state">
           <div class="library-empty-icon">
             <i class="search icon"></i>
           </div>
@@ -173,8 +173,8 @@
               </tr>
             </thead>
 
-            <tbody> <!-- tr hiển thị sau khi tính xong visibleWords trên bảng Read -->
-              <tr v-for="word in visibleWords" :key="word._id">
+            <tbody> <!-- tr hiển thị sau khi tính xong visibleItems trên bảng Read -->
+              <tr v-for="word in visibleItems" :key="word._id">
                 <td
                   class="center aligned favourite-cell"
                   title="Toggle favourite"
@@ -340,14 +340,17 @@ import {
   getWords,
   updateWord,
   deleteWord,
-  getCategories
+  getCategories,
+  speakWord
 } from '../helpers/helpers';
+import { paginationMixin, focusFieldMixin } from '../helpers/mixins';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import ImportExportModal from '../components/ImportExportModal.vue';
 
 export default {
   name: 'words',
   components: { ConfirmModal, ImportExportModal },
+  mixins: [paginationMixin, focusFieldMixin],
   // Khởi tạo các trạng thái dữ liệu cho trang thư viện từ vựng
   data() {
     return {
@@ -357,8 +360,6 @@ export default {
       selectedCategoryId: '',        // category đang lọc ('' = tất cả)
       selectedFavouriteFilter: 'all', // 'all' | 'fav' | 'normal'
       selectedSortOrder: 'newest', // 'newest' | 'oldest'
-      currentPage: 1,              // trang hiện tại
-      pageSize: 8,                 // số từ mỗi trang
       isConfirmOpen: false,        // Cờ hiển thị dialog xóa
       wordToDelete: null,          // Từ vựng chuẩn bị xóa
       isImportExportOpen: false    // Cờ hiển thị modal Import/Export
@@ -370,12 +371,6 @@ export default {
     selectedCategoryId: 'resetPage',
     selectedFavouriteFilter: 'resetPage',
     selectedSortOrder: 'resetPage',
-    // Sau khi lọc dữ liệu tại trang 4, lọc xong còn 2 trang → lùi về trang cuối để tránh lỗi hiển thị
-    filteredWords() {
-      if (this.currentPage > this.totalPages) {
-        this.currentPage = this.totalPages;
-      }
-    },
     // Theo dõi route query để áp dụng lọc category nếu chuyển từ Category Manager
     '$route.query.category': {
       handler(newCategory) {
@@ -432,22 +427,12 @@ export default {
 
       return result;
     },
-    // ── Phân trang ───────────────────────────────────────────────────
-    totalPages() {
-      return Math.ceil(this.filteredWords.length / this.pageSize) || 1;
+    // Nguồn dữ liệu & nhãn cho paginationMixin (logic phân trang dùng chung)
+    paginationItems() {
+      return this.filteredWords;
     },
-    visibleWords() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      return this.filteredWords.slice(start, start + this.pageSize); 
-    },
-    paginationSummary() {
-      const total = this.filteredWords.length;
-      if (total === 0) return '0 words';
-
-      const start = (this.currentPage - 1) * this.pageSize + 1;
-      const end = Math.min(start + this.pageSize - 1, total);
-
-      return `Showing ${start}–${end} of ${total} words`;
+    paginationLabel() {
+      return 'words';
     }
   },
   // Lifecycle hook mounted
@@ -463,37 +448,6 @@ export default {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(${escaped})`, 'gi');
       return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-    },
-
-    // Xuất file CSV danh sách từ vựng (Mục số 4)
-    exportToCSV() {
-      const wordsToExport = this.filteredWords;
-      if (!wordsToExport || wordsToExport.length === 0) {
-        return this.flash('No words available to export.', 'warning');
-      }
-
-      const headers = ['English', 'German', 'French', 'Category', 'Favourite', 'Created Date'];
-      const rows = wordsToExport.map(w => [
-        `"${(w.english || '').replace(/"/g, '""')}"`,
-        `"${(w.german || '').replace(/"/g, '""')}"`,
-        `"${(w.french || '').replace(/"/g, '""')}"`,
-        `"${(w.category?.name || '').replace(/"/g, '""')}"`,
-        w.favourite ? 'Yes' : 'No',
-        `"${w.created_date ? new Date(w.created_date).toLocaleString() : ''}"`
-      ]);
-
-      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `vocabulary_export_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      this.flash(`Exported ${wordsToExport.length} words to CSV!`, 'success');
     },
 
     // Clear ô tìm kiếm
@@ -512,39 +466,9 @@ export default {
         this.$router.replace({ query: {} });
       }
     },
-    // Focus vào input/select theo ref
-    focusField(refName) {
-      this.$nextTick(() => {
-        if (this.$refs[refName]) {
-          this.$refs[refName].focus();
-        }
-      });
-    },
-    resetPage() {
-      this.currentPage = 1;
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-      }
-    },
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
-    },
-    goToPage(page) {
-      this.currentPage = page;
-    },
 
-    // Phát âm thanh bằng Web Speech API
-    speakWord(text, languageCode) {
-      if (!text || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = languageCode;
-      window.speechSynthesis.speak(utterance);
-    },
+    // Phát âm thanh bằng Web Speech API (helper dùng chung trong helpers.js)
+    speakWord,
 
     // Load words + categories từ API
     async loadPageData() {
@@ -616,17 +540,15 @@ export default {
 .library-filters,
 .library-panel {
   margin: 0 !important;
-  padding: 1.6rem !important;
+  padding: 1.25rem !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  border-radius: 10px !important;
-  box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.04),
-    0 6px 16px rgba(15, 23, 42, 0.02) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .library-panel {
-  margin-top: 1.5rem !important;
+  margin-top: 1.25rem !important;
 }
 
 .library-panel-heading {
@@ -634,52 +556,49 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .library-panel-heading h2 {
   margin: 0;
   color: #0f172a;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
   letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .library-panel-heading p {
-  margin: 0.2rem 0 0;
+  margin: 0.15rem 0 0;
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.4;
 }
 
 .library-panel-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .reset-filter-btn {
   font-size: 0.8rem !important;
   padding: 0.4rem 0.75rem !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   color: #64748b !important;
   border-color: #cbd5e1 !important;
   margin: 0 !important;
 }
 .reset-filter-btn:hover {
   color: #0f172a !important;
-  background: #f1f5f9 !important;
+  background: #f8fafc !important;
 }
 
 .clickable-label {
   cursor: pointer;
   user-select: none;
-  transition: color 0.15s ease;
-}
-.clickable-label:hover {
-  color: #0284c7 !important;
 }
 
 .search-input-wrapper {
@@ -688,20 +607,19 @@ export default {
 
 .clear-search-icon {
   position: absolute !important;
-  right: 12px !important;
+  right: 10px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   left: auto !important;
   cursor: pointer !important;
   pointer-events: auto !important;
   color: #94a3b8 !important;
-  font-size: 1.15rem !important;
-  transition: color 0.15s ease, transform 0.15s ease !important;
+  font-size: 1rem !important;
+  transition: color 0.15s ease !important;
 }
 
 .clear-search-icon:hover {
   color: #ef4444 !important;
-  transform: translateY(-50%) scale(1.1) !important;
 }
 
 .library-filter-grid {
@@ -718,14 +636,18 @@ export default {
 .library-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .library-table {
   margin: 0 !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
 }
 
 .library-table .favourite-column {
-  width: 50px;
+  width: 46px;
 }
 
 .library-table .language-column {
@@ -733,27 +655,39 @@ export default {
 }
 
 .library-table .category-column {
-  width: 140px;
+  width: 150px;
 }
 
 .library-table .actions-column {
-  width: 130px;
+  width: 128px;
 }
 
 .library-table th {
-  padding-top: 0.85rem !important;
-  padding-bottom: 0.85rem !important;
-  color: #0f172a !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  color: #64748b !important;
   background: #f8fafc !important;
-  border-bottom: 1px solid #cbd5e1 !important;
-  font-size: 0.76rem !important;
-  font-weight: 700 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
 }
 
 .library-table td {
   vertical-align: middle !important;
+  padding: 0.7rem 0.75rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155;
+  font-size: 0.875rem;
+}
+
+.library-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+.library-table tbody tr:last-child td {
+  border-bottom: none !important;
 }
 
 .favourite-cell {
@@ -763,7 +697,7 @@ export default {
 .language-with-audio {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .language-text {
@@ -780,48 +714,46 @@ export default {
 ::v-deep .search-highlight {
   background-color: #fef08a !important;
   color: #854d0e !important;
-  padding: 0.05em 0.25em !important;
-  border-radius: 4px !important;
-  font-weight: 700 !important;
+  padding: 0.05em 0.2em !important;
+  border-radius: 3px !important;
+  font-weight: 600 !important;
 }
 
 .language-audio-button {
   display: inline-flex;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   align-items: center;
   justify-content: center;
   padding: 0;
   color: #64748b;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 7px;
+  border-radius: 50%;
   cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .language-audio-button .icon {
   margin: 0 !important;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   line-height: 1;
 }
 
 .language-audio-button:hover {
-  color: #0284c7;
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .language-audio-button:active {
-  background: #e0f2fe;
+  transform: scale(0.94);
 }
 
 .language-audio-button:focus-visible {
-  outline: 2px solid rgba(2, 132, 199, 0.18);
+  outline: 2px solid rgba(59, 130, 246, 0.35);
   outline-offset: 2px;
 }
 
@@ -829,12 +761,12 @@ export default {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.3rem !important;
-  padding: 0.3em 0.65em !important;
-  color: #30394a !important;
-  background: #f7f9fb !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 6px !important;
-  font-weight: 600 !important;
+  padding: 0.25em 0.6em !important;
+  color: #334155 !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
 }
 
 .category-label > span {
@@ -849,12 +781,13 @@ export default {
 .library-row-actions {
   display: flex;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .library-row-actions .ui.button {
   margin: 0;
-  padding: 0.55rem 0.6rem !important;
+  padding: 0.4rem 0.5rem !important;
+  border-radius: 4px !important;
 }
 
 .library-pagination {
@@ -869,35 +802,35 @@ export default {
 
 .pagination-summary {
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .pagination-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   padding: 0.4rem 0.75rem;
   color: #0f172a;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  color: #0284c7;
+  color: #3b82f6;
   background: #f8fafc;
-  border-color: #0284c7;
+  border-color: #93c5fd;
 }
 
 .pagination-btn:disabled {
@@ -915,9 +848,9 @@ export default {
   color: #334155;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -931,7 +864,7 @@ export default {
   color: #ffffff;
   background: #0f172a;
   border-color: #0f172a;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .library-empty-state {
@@ -939,12 +872,12 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
-  padding: 3rem 1.75rem;
-  color: #687386;
-  background: #fafbfc;
-  border: 1px dashed #d9dee7;
-  border-radius: 12px;
+  gap: 1rem;
+  padding: 2.5rem 1.5rem;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
   text-align: center;
 }
 
@@ -952,27 +885,27 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9aa3b3;
+  color: #9ca3af;
 }
 
 .library-empty-icon .icon {
   margin: 0 !important;
-  font-size: 2.75rem;
+  font-size: 2rem;
   line-height: 1;
 }
 
 .library-empty-text {
   max-width: 420px;
-  color: #3c4557;
-  font-size: 1.05rem;
-  font-weight: 600;
+  color: #4b5563;
+  font-size: 0.95rem;
+  font-weight: 500;
   line-height: 1.5;
 }
 
 .library-empty-button {
   margin: 0.25rem 0 0 0 !important;
-  padding: 0.85rem 1.6rem !important;
-  border-radius: 8px !important;
-  font-size: 0.95rem;
+  padding: 0.6rem 1.25rem !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem;
 }
 </style>
